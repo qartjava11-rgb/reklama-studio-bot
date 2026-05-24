@@ -1,0 +1,12 @@
+{
+  "name": "reklama-studio-bot",
+  "version": "1.0.0",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js"
+  },
+  "dependencies": {
+    "telegraf": "^4.15.3",
+    "pg": "^8.11.3"
+  }
+}

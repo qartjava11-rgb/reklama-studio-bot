@@ -4,619 +4,524 @@ const db = require("./database");
 const { formatPrice, genId, nowStr } = require("./utils");
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
-bot.use(session());
+bot.use(session({ defaultSession: () => ({}) }));
 
-// ── Rollar ──
 const ADMIN_IDS = (process.env.ADMIN_IDS || "").split(",").map(Number);
-const isAdmin = (ctx) => ADMIN_IDS.includes(ctx.from.id);
+const WEBAPP_URL = process.env.WEBAPP_URL || "";
+const isAdmin = ctx => ADMIN_IDS.includes(ctx.from.id);
 
-// ── Start ──
-bot.start(async (ctx) => {
+// ── /start ──
+bot.start(async ctx => {
   const worker = await db.getWorkerByTelegramId(ctx.from.id);
   if (worker) {
-    ctx.session = { step: null, workerId: worker.id, workerName: worker.name };
+    ctx.session = { workerId: worker.id, workerName: worker.name };
     return showWorkerMenu(ctx);
   }
   if (isAdmin(ctx)) {
-    ctx.session = { step: null };
+    ctx.session = { isAdmin: true };
     return showAdminMenu(ctx);
   }
-  ctx.reply(
-    "Salom! Reklama Studio tizimiga xush kelibsiz.\n\nKirish uchun parol kiriting:",
-    Markup.forceReply()
-  );
-  ctx.session = { step: "login_password" };
+  ctx.session = { step: "login" };
+  return ctx.reply("👋 Salom! Parolingizni kiriting:");
 });
 
-// ── Matn xabarlari ──
-bot.on(message("text"), async (ctx) => {
-  const text = ctx.message.text;
-  const step = ctx.session?.step;
+// ── Matn ──
+bot.on(message("text"), async ctx => {
+  const text = ctx.message.text.trim();
+  const s = ctx.session || {};
 
-  // ── LOGIN ──
-  if (step === "login_password") {
-    const worker = await db.getWorkerByPassword(text.trim());
+  if (s.step === "login") {
+    const worker = await db.getWorkerByPassword(text);
     if (worker) {
       await db.setWorkerTelegramId(worker.id, ctx.from.id);
-      ctx.session = { step: null, workerId: worker.id, workerName: worker.name };
-      await ctx.reply(`Xush kelibsiz, ${worker.name}! ✅`);
+      ctx.session = { workerId: worker.id, workerName: worker.name };
+      await ctx.reply(`✅ Xush kelibsiz, ${worker.name}!`);
       return showWorkerMenu(ctx);
     }
-    if (text.trim() === process.env.ADMIN_PASS) {
-      ctx.session = { step: null, isAdmin: true };
-      await ctx.reply("Admin sifatida kirdingiz! 🔐");
+    if (text === process.env.ADMIN_PASS) {
+      ctx.session = { isAdmin: true };
+      await ctx.reply("🔐 Admin sifatida kirdingiz!");
       return showAdminMenu(ctx);
     }
-    return ctx.reply("❌ Parol noto'g'ri! Qayta kiriting:", Markup.forceReply());
+    return ctx.reply("❌ Parol noto'g'ri! Qayta kiriting:");
   }
 
-  // ── BUYURTMA JARAYONI ──
-  if (step === "order_client_name") {
-    ctx.session.order = { clientName: text };
-    ctx.session.step = "order_client_phone";
-    return ctx.reply("📱 Telefon raqamini kiriting:", Markup.forceReply());
-  }
-  if (step === "order_client_phone") {
-    ctx.session.order.clientPhone = text;
-    ctx.session.step = "order_topic";
-    return ctx.reply("📌 Buyurtma mavzusini kiriting:\n(masalan: Do'kon fasadi, To'y banneri)", Markup.forceReply());
-  }
-  if (step === "order_topic") {
-    ctx.session.order.topic = text;
-    ctx.session.order.items = [];
-    ctx.session.step = "order_add_item";
-    return showAddItemMenu(ctx);
-  }
-  if (step === "order_item_size") {
-    // Format: kenlik uzunlik (masalan: 300 500)
-    const parts = text.trim().split(/[\s,x×]+/);
-    if (parts.length < 2 || isNaN(parts[0]) || isNaN(parts[1])) {
-      return ctx.reply("❌ Format xato! Masalan: `300 500` yoki `300x500`", { parse_mode: "Markdown" });
-    }
-    const w = parseFloat(parts[0]);
-    const l = parseFloat(parts[1]);
-    const qty = parts[2] ? parseInt(parts[2]) : 1;
-    const mat = ctx.session.currentMat;
-    const prices = await db.getPrices();
-    const rolls = { banner: [110,130,160,210,320], arakal: [100,120,150], setka: [100,120,150] };
-    const matRolls = rolls[mat];
+  // Buyurtma jarayoni
+  if (s.step === "o_name") { s.ord = { clientName: text }; s.step = "o_phone"; return ctx.reply("📱 Telefon:", Markup.forceReply()); }
+  if (s.step === "o_phone") { s.ord.clientPhone = text; s.step = "o_topic"; return ctx.reply("📌 Mavzu (Do'kon fasadi, To'y banneri...):", Markup.forceReply()); }
+  if (s.step === "o_topic") { s.ord.topic = text; s.ord.items = []; s.step = "o_item"; return showItemMenu(ctx); }
+
+  if (s.step === "o_size") {
+    const parts = text.split(/[\sx×,]+/);
+    if (parts.length < 2 || isNaN(parts[0]) || isNaN(parts[1])) return ctx.reply("❌ Format: `300 500` yoki `300x500`", { parse_mode: "Markdown" });
+    const w = parseFloat(parts[0]), l = parseFloat(parts[1]), qty = parts[2] ? parseInt(parts[2]) : 1;
+    const mat = s.curMat;
+    const rolls = { banner:[110,130,160,210,320], arakal:[100,120,150], setka:[100,120,150] };
     let bW = null;
-    for (const r of matRolls) { if (r >= w) { bW = r; break; } }
-    if (!bW) {
-      return ctx.reply(`❌ ${w}sm kenglik uchun material yo'q!\nMavjud: ${matRolls.join(", ")} sm`);
-    }
+    for (const r of rolls[mat]) { if (r >= w) { bW = r; break; } }
+    if (!bW) return ctx.reply(`❌ ${w}sm uchun material yo'q! Mavjud: ${rolls[mat].join(", ")}sm`);
     const area = (bW * l) / 10000;
-    const workerPrices = await db.getWorkerPrices(ctx.session.workerId);
-    const price = workerPrices[mat] || prices[mat];
+    const wp = await db.getWorkerPrices(s.workerId);
+    const prices = await db.getPrices();
+    const price = wp[mat] || prices[mat];
     const total = area * price * qty;
-    const matNames = { banner: "Banner", arakal: "Arakal", setka: "Setka" };
-    ctx.session.order.items.push({
-      material: matNames[mat], custWidth: w, custLength: l,
-      billedWidth: bW, billedAreaM2: area, qty, total, pricePerM2: price
-    });
-    ctx.session.step = "order_add_item";
-    await ctx.reply(
-      `✅ Qo'shildi:\n` +
-      `📐 ${w}×${l}sm → ${area.toFixed(3)}m²\n` +
-      `🔢 ${qty} dona\n` +
-      `💰 ${formatPrice(total)}`
-    );
-    return showAddItemMenu(ctx);
+    const matNames = { banner:"Banner", arakal:"Arakal", setka:"Setka" };
+    s.ord.items.push({ material: matNames[mat], custWidth:w, custLength:l, billedWidth:bW, billedAreaM2:area, qty, total, pricePerM2:price });
+    s.step = "o_item";
+    await ctx.reply(`✅ Qo'shildi: ${w}×${l}sm → ${area.toFixed(3)}m² × ${qty} = *${formatPrice(total)}*`, { parse_mode:"Markdown" });
+    return showItemMenu(ctx);
   }
-  if (step === "order_harf3d_price") {
-    const price = parseInt(text);
-    if (!price || price < 1000) return ctx.reply("❌ Narx noto'g'ri! Qayta kiriting:");
-    ctx.session.harf3dPrice = price;
-    ctx.session.step = "order_harf3d_desc";
-    return ctx.reply("📝 Zakaz tavsifini kiriting:\n(harf turi, o'lcham, rang...)", Markup.forceReply());
+
+  if (s.step === "o_h3p") { const p = parseInt(text); if (!p) return ctx.reply("❌ Narx noto'g'ri!"); s.h3p = p; s.step = "o_h3d"; return ctx.reply("📝 Tavsif:", Markup.forceReply()); }
+  if (s.step === "o_h3d") {
+    s.ord.items.push({ material:"3D Harf", custWidth:0, custLength:0, billedAreaM2:0, qty:1, total:s.h3p, harf3dDesc:text });
+    s.step = "o_item";
+    await ctx.reply(`✅ 3D Harf: ${formatPrice(s.h3p)}`);
+    return showItemMenu(ctx);
   }
-  if (step === "order_harf3d_desc") {
-    ctx.session.order.items.push({
-      material: "3D Harf", custWidth: 0, custLength: 0,
-      billedAreaM2: 0, qty: 1, total: ctx.session.harf3dPrice, harf3dDesc: text
-    });
-    ctx.session.step = "order_add_item";
-    await ctx.reply(`✅ 3D Harf qo'shildi: ${formatPrice(ctx.session.harf3dPrice)}`);
-    return showAddItemMenu(ctx);
-  }
-  if (step === "order_payment") {
-    const parts = text.trim().split(/[\s]+/);
+
+  if (s.step === "o_pay") {
+    const parts = text.split(/\s+/);
     const amount = parseInt(parts[0]);
     const method = parts[1]?.toLowerCase() === "click" ? "click" : "naqd";
-    if (!amount || amount < 100) return ctx.reply("❌ Summa noto'g'ri! Masalan: `500000` yoki `500000 click`", { parse_mode: "Markdown" });
-    if (!ctx.session.order.payments) ctx.session.order.payments = [];
-    ctx.session.order.payments.push({ method, amount });
-    const total = ctx.session.order.items.reduce((s, i) => s + i.total, 0);
-    const paid = ctx.session.order.payments.reduce((s, p) => s + p.amount, 0);
-    const debt = total - paid;
-    await ctx.reply(
-      `💰 Tulov qo'shildi: ${formatPrice(amount)} (${method})\n` +
-      `✅ To'langan: ${formatPrice(paid)}\n` +
-      `${debt > 0 ? "💸 Qoldi: " + formatPrice(debt) : "✅ To'liq to'langan"}`
-    );
-    return showPaymentMenu(ctx, total, paid);
+    if (!amount || amount < 100) return ctx.reply("❌ Format: `500000` yoki `500000 click`", { parse_mode:"Markdown" });
+    if (!s.ord.payments) s.ord.payments = [];
+    s.ord.payments.push({ method, amount });
+    const total = s.ord.items.reduce((a,i) => a+i.total, 0);
+    const paid = s.ord.payments.reduce((a,p) => a+p.amount, 0);
+    await ctx.reply(`💰 Qo'shildi: *${formatPrice(amount)}* (${method})\n✅ To'langan: *${formatPrice(paid)}*\n${total-paid>0?"💸 Qoldi: *"+formatPrice(total-paid)+"*":"✅ To'liq to'landi"}`, { parse_mode:"Markdown" });
+    return showPayMenu(ctx, total, paid);
   }
-  if (step === "order_worker_price") {
-    const mat = ctx.session.editingMat;
+
+  // Narx o'zgartirish
+  if (s.step === "w_price") {
     const price = parseInt(text);
-    if (!price || price < 1000) return ctx.reply("❌ Narx noto'g'ri!");
-    await db.setWorkerPrice(ctx.session.workerId, mat, price);
-    ctx.session.step = null;
-    const matNames = { banner: "Banner", arakal: "Arakal", setka: "Setka" };
-    await ctx.reply(`✅ ${matNames[mat]} narxi ${formatPrice(price)} ga o'zgartirildi!`);
+    if (!price) return ctx.reply("❌ Noto'g'ri!");
+    await db.setWorkerPrice(s.workerId, s.priceMat, price);
+    s.step = null;
+    const n = { banner:"Banner", arakal:"Arakal", setka:"Setka" };
+    await ctx.reply(`✅ ${n[s.priceMat]} narxi: *${formatPrice(price)}*`, { parse_mode:"Markdown" });
     return showWorkerMenu(ctx);
   }
 
-  // ── ADMIN: yangi ishchi ──
-  if (step === "admin_new_worker_name") {
-    ctx.session.newWorkerName = text.trim();
-    ctx.session.step = "admin_new_worker_pass";
-    return ctx.reply("🔑 Parol kiriting:", Markup.forceReply());
+  // Kirim/chiqim
+  if (s.step === "add_income") {
+    const parts = text.split("\n");
+    const amount = parseInt(parts[0]);
+    const note = parts[1] || "Qo'shimcha kirim";
+    if (!amount) return ctx.reply("❌ Format:\n`500000\nIzoh`", { parse_mode:"Markdown" });
+    await db.saveIncome({ id: genId("INC"), date: nowStr(), timestamp: Date.now(), amount, note });
+    s.step = null;
+    await ctx.reply(`✅ Kirim saqlandi: *${formatPrice(amount)}*\n📝 ${note}`, { parse_mode:"Markdown" });
+    return showAdminMenu(ctx);
   }
-  if (step === "admin_new_worker_pass") {
-    await db.addWorker(ctx.session.newWorkerName, text.trim());
-    ctx.session.step = null;
-    await ctx.reply(`✅ ${ctx.session.newWorkerName} ishchi qo'shildi!`);
+  if (s.step === "add_expense") {
+    const parts = text.split("\n");
+    const amount = parseInt(parts[0]);
+    const note = parts[1] || "Chiqim";
+    if (!amount) return ctx.reply("❌ Format:\n`500000\nIzoh`", { parse_mode:"Markdown" });
+    await db.saveExpense({ id: genId("EXP"), date: nowStr(), timestamp: Date.now(), amount, category: note, note });
+    s.step = null;
+    await ctx.reply(`✅ Chiqim saqlandi: *${formatPrice(amount)}*\n📝 ${note}`, { parse_mode:"Markdown" });
     return showAdminMenu(ctx);
   }
 
-  // ── ADMIN: narx o'zgartirish ──
-  if (step === "admin_set_price") {
-    const mat = ctx.session.editingMat;
-    const price = parseInt(text);
-    if (!price) return ctx.reply("❌ Noto'g'ri raqam!");
-    await db.setPrice(mat, price);
-    ctx.session.step = null;
-    await ctx.reply(`✅ Narx saqlandi: ${formatPrice(price)}`);
+  // Admin: yangi ishchi
+  if (s.step === "new_w_name") { s.newWName = text; s.step = "new_w_pass"; return ctx.reply("🔑 Parol:", Markup.forceReply()); }
+  if (s.step === "new_w_pass") {
+    await db.addWorker(s.newWName, text);
+    s.step = null;
+    await ctx.reply(`✅ ${s.newWName} ishchi qo'shildi!`);
     return showAdminMenu(ctx);
   }
-  if (step === "admin_debt_payment") {
-    const orderId = ctx.session.debtOrderId;
+
+  // Admin: narx
+  if (s.step === "admin_price") {
+    const price = parseInt(text);
+    if (!price) return ctx.reply("❌ Noto'g'ri!");
+    await db.setPrice(s.priceMat, price);
+    s.step = null;
+    await ctx.reply(`✅ Narx saqlandi: *${formatPrice(price)}*`, { parse_mode:"Markdown" });
+    return showAdminMenu(ctx);
+  }
+
+  // Qarz to'lovi
+  if (s.step === "debt_pay") {
     const amount = parseInt(text);
     if (!amount) return ctx.reply("❌ Noto'g'ri summa!");
-    const order = await db.getOrder(orderId);
-    const newDebt = Math.max(0, (order.debtAmount || 0) - amount);
-    await db.updateOrder(orderId, {
-      debtAmount: newDebt,
-      paidAmount: order.paidAmount + amount,
-      status: newDebt === 0 ? "qabul" : "qarz"
-    });
-    ctx.session.step = null;
-    await ctx.reply(`✅ Qarz to'lovi qabul qilindi: ${formatPrice(amount)}\n${newDebt > 0 ? "💸 Qolgan qarz: " + formatPrice(newDebt) : "🎉 Qarz to'liq to'landi!"}`);
+    const order = await db.getOrder(s.debtId);
+    if (!order) return ctx.reply("❌ Buyurtma topilmadi!");
+    const newDebt = Math.max(0, (order.debtAmount||0) - amount);
+    await db.updateOrder(s.debtId, { debtAmount: newDebt, paidAmount: order.paidAmount + amount, status: newDebt===0?"qabul":"qarz" });
+    s.step = null;
+    await ctx.reply(`✅ Qarz to'lovi: *${formatPrice(amount)}*\n${newDebt>0?"💸 Qolgan: *"+formatPrice(newDebt)+"*":"🎉 Qarz to'liq to'landi!"}`, { parse_mode:"Markdown" });
     return showAdminMenu(ctx);
   }
 });
 
-// ── Callback (tugmalar) ──
-bot.on("callback_query", async (ctx) => {
-  const data = ctx.callbackQuery.data;
+// ── Callback ──
+bot.on("callback_query", async ctx => {
+  const d = ctx.callbackQuery.data;
   await ctx.answerCbQuery();
+  const s = ctx.session || {};
 
-  // Worker menu
-  if (data === "new_order") {
-    ctx.session.step = "order_client_name";
-    ctx.session.order = {};
-    return ctx.reply("👤 Mijoz ismini kiriting:", Markup.forceReply());
-  }
-  if (data === "my_orders") return showMyOrders(ctx);
-  if (data === "change_prices") return showChangePricesMenu(ctx);
-  if (data.startsWith("set_price_")) {
-    const mat = data.replace("set_price_", "");
-    ctx.session.step = "order_worker_price";
-    ctx.session.editingMat = mat;
-    const prices = await db.getPrices();
-    const wp = await db.getWorkerPrices(ctx.session.workerId);
-    const cur = wp[mat] || prices[mat];
-    const matNames = { banner: "Banner", arakal: "Arakal", setka: "Setka" };
-    return ctx.reply(`💰 ${matNames[mat]} narxi (joriy: ${formatPrice(cur)})\nYangi narxni kiriting:`, Markup.forceReply());
+  // Worker
+  if (d === "new_order") { s.step = "o_name"; s.ord = {}; return ctx.reply("👤 Mijoz ismi:", Markup.forceReply()); }
+  if (d === "my_orders") return showMyOrders(ctx);
+  if (d === "worker_prices") return showWorkerPricesMenu(ctx);
+  if (d.startsWith("wp_")) {
+    s.step = "w_price"; s.priceMat = d.slice(3);
+    const p = await db.getPrices(); const wp = await db.getWorkerPrices(s.workerId);
+    const cur = wp[s.priceMat] || p[s.priceMat];
+    const n = { banner:"Banner", arakal:"Arakal", setka:"Setka" };
+    return ctx.reply(`💰 ${n[s.priceMat]} (joriy: *${formatPrice(cur)}*)\nYangi narx:`, { parse_mode:"Markdown" });
   }
 
-  // Item type selection
-  if (data.startsWith("item_type_")) {
-    const mat = data.replace("item_type_", "");
-    if (mat === "harf3d") {
-      ctx.session.step = "order_harf3d_price";
-      return ctx.reply("💰 Kelishilgan narxni kiriting (so'm):", Markup.forceReply());
-    }
-    ctx.session.currentMat = mat;
-    ctx.session.step = "order_item_size";
-    const matNames = { banner: "Banner", arakal: "Arakal", setka: "Setka" };
-    const prices = await db.getPrices();
-    const wp = await db.getWorkerPrices(ctx.session.workerId);
-    const price = wp[mat] || prices[mat];
-    return ctx.reply(
-      `📐 *${matNames[mat]}* — ${formatPrice(price)}/m²\n\nO'lcham kiriting:\n\`kenlik uzunlik [dona]\`\nMasalan: \`300 500\` yoki \`200 400 2\``,
-      { parse_mode: "Markdown" }
-    );
+  // Item type
+  if (d.startsWith("it_")) {
+    const mat = d.slice(3);
+    if (mat === "harf3d") { s.step = "o_h3p"; return ctx.reply("💰 Kelishilgan narx (so'm):", Markup.forceReply()); }
+    s.curMat = mat; s.step = "o_size";
+    const p = await db.getPrices(); const wp = await db.getWorkerPrices(s.workerId);
+    const price = wp[mat] || p[mat];
+    const n = { banner:"Banner", arakal:"Arakal", setka:"Setka" };
+    return ctx.reply(`📐 *${n[mat]}* — ${formatPrice(price)}/m²\n\nO'lcham: \`kenlik uzunlik [dona]\`\nMasalan: \`300 500\` yoki \`200 400 2\``, { parse_mode:"Markdown" });
   }
-  if (data === "item_done") {
-    if (!ctx.session.order.items?.length) return ctx.reply("❌ Hech narsa qo'shmadingiz!");
-    ctx.session.order.payments = [];
-    ctx.session.step = "order_payment";
-    const total = ctx.session.order.items.reduce((s, i) => s + i.total, 0);
-    return ctx.reply(
-      `💳 Tulov:\nJami: *${formatPrice(total)}*\n\nSumma kiriting (naqd uchun: \`500000\`, click uchun: \`500000 click\`):`,
-      { parse_mode: "Markdown" }
-    );
+  if (d === "item_done") {
+    if (!s.ord?.items?.length) return ctx.reply("❌ Hech narsa qo'shmadingiz!");
+    s.ord.payments = []; s.step = "o_pay";
+    const total = s.ord.items.reduce((a,i)=>a+i.total,0);
+    return ctx.reply(`💳 Jami: *${formatPrice(total)}*\n\nSumma kiriting:\n\`500000\` — naqd\n\`500000 click\` — click`, { parse_mode:"Markdown" });
   }
 
   // Payment
-  if (data === "pay_done_full") {
-    const total = ctx.session.order.items.reduce((s, i) => s + i.total, 0);
-    ctx.session.order.payments = [{ method: "naqd", amount: total }];
+  if (d === "pay_full") {
+    const total = s.ord.items.reduce((a,i)=>a+i.total,0);
+    s.ord.payments = [{ method:"naqd", amount:total }];
     return saveOrder(ctx, false);
   }
-  if (data === "pay_done_debt") return saveOrder(ctx, true);
-  if (data === "pay_add_more") {
-    ctx.session.step = "order_payment";
-    const total = ctx.session.order.items.reduce((s, i) => s + i.total, 0);
-    const paid = (ctx.session.order.payments || []).reduce((s, p) => s + p.amount, 0);
-    return ctx.reply(`Qolgan summa: *${formatPrice(total - paid)}*\nQo'shimcha tulov kiriting:`, { parse_mode: "Markdown" });
+  if (d === "pay_debt") return saveOrder(ctx, true);
+  if (d === "pay_more") {
+    s.step = "o_pay";
+    const total = s.ord.items.reduce((a,i)=>a+i.total,0);
+    const paid = (s.ord.payments||[]).reduce((a,p)=>a+p.amount,0);
+    return ctx.reply(`💸 Qolgan: *${formatPrice(total-paid)}*\nQo'shimcha tulov:`, { parse_mode:"Markdown" });
   }
 
-  // Admin menu
-  if (data === "admin_orders") return showAdminOrders(ctx);
-  if (data === "admin_debts") return showAdminDebts(ctx);
-  if (data === "admin_report") return showAdminReport(ctx);
-  if (data === "admin_m2report") return showM2Report(ctx);
-  if (data === "admin_workers") return showAdminWorkers(ctx);
-  if (data === "admin_add_worker") {
-    ctx.session.step = "admin_new_worker_name";
-    return ctx.reply("👤 Yangi ishchi ismi:", Markup.forceReply());
+  // Admin
+  if (d === "admin_orders") return showAdminOrders(ctx);
+  if (d === "admin_debts") return showAdminDebts(ctx);
+  if (d === "admin_kassa") return showKassa(ctx);
+  if (d === "admin_m2") return showM2(ctx);
+  if (d === "admin_workers") return showWorkers(ctx);
+  if (d === "admin_add_worker") { s.step = "new_w_name"; return ctx.reply("👤 Ism:", Markup.forceReply()); }
+  if (d === "admin_prices") return showAdminPrices(ctx);
+  if (d.startsWith("ap_")) {
+    s.step = "admin_price"; s.priceMat = d.slice(3);
+    const p = await db.getPrices();
+    const n = { banner:"Banner", arakal:"Arakal", setka:"Setka" };
+    return ctx.reply(`💰 ${n[s.priceMat]} yangi narx (joriy: *${formatPrice(p[s.priceMat])}*):`, { parse_mode:"Markdown" });
   }
-  if (data === "admin_prices") return showAdminPricesMenu(ctx);
-  if (data.startsWith("admin_set_price_")) {
-    const mat = data.replace("admin_set_price_", "");
-    ctx.session.step = "admin_set_price";
-    ctx.session.editingMat = mat;
-    const prices = await db.getPrices();
-    const matNames = { banner: "Banner", arakal: "Arakal", setka: "Setka" };
-    return ctx.reply(`💰 ${matNames[mat]} yangi narx (joriy: ${formatPrice(prices[mat])}):`, Markup.forceReply());
+  if (d === "add_income") { s.step = "add_income"; return ctx.reply("📥 Kirim:\n*1-qator:* summa\n*2-qator:* izoh\n\nMasalan:\n`500000\nMijozdan oldindan to'lov`", { parse_mode:"Markdown" }); }
+  if (d === "add_expense") { s.step = "add_expense"; return ctx.reply("📤 Chiqim:\n*1-qator:* summa\n*2-qator:* izoh\n\nMasalan:\n`200000\nBanner material xarid`", { parse_mode:"Markdown" }); }
+  if (d.startsWith("dp_")) { s.step = "debt_pay"; s.debtId = d.slice(3); const o = await db.getOrder(s.debtId); return ctx.reply(`💸 ${o.client.name} — Qarz: *${formatPrice(o.debtAmount)}*\nTo'lov miqdori:`, { parse_mode:"Markdown" }); }
+  if (d.startsWith("pu_")) { await db.updateOrder(d.slice(3), { status:"arxiv", pickedUpAt:nowStr() }); return ctx.reply("✅ Arxivga o'tkazildi!"); }
+  if (d.startsWith("cn_")) { await db.updateOrder(d.slice(3), { status:"bekor", canceledAt:nowStr() }); return ctx.reply("❌ Bekor qilindi."); }
+  if (d.startsWith("st_")) {
+    const parts = d.slice(3).split("_");
+    const status = parts.pop(); const orderId = parts.join("_");
+    await db.updateOrder(orderId, { status });
+    return ctx.reply(`✅ Status: ${status}`);
   }
-  if (data.startsWith("debt_pay_")) {
-    const orderId = data.replace("debt_pay_", "");
-    ctx.session.step = "admin_debt_payment";
-    ctx.session.debtOrderId = orderId;
-    const order = await db.getOrder(orderId);
-    return ctx.reply(`💸 ${order.client.name} — Qarz: ${formatPrice(order.debtAmount)}\nTo'lov miqdorini kiriting:`);
-  }
-  if (data.startsWith("pickup_")) {
-    const orderId = data.replace("pickup_", "");
-    await db.updateOrder(orderId, { status: "arxiv", pickedUpAt: nowStr() });
-    return ctx.reply("✅ Buyurtma arxivga o'tkazildi!");
-  }
-  if (data.startsWith("cancel_order_")) {
-    const orderId = data.replace("cancel_order_", "");
-    await db.updateOrder(orderId, { status: "bekor", canceledAt: nowStr() });
-    return ctx.reply("❌ Buyurtma bekor qilindi.");
-  }
-  if (data.startsWith("status_")) {
-    const [, orderId, status] = data.split("_status_").length > 1
-      ? ["", ...data.replace("status_", "").split("_s_")]
-      : data.split("__");
-    // format: status__orderId__newStatus
-    const parts = data.replace("status__", "").split("__");
-    if (parts.length === 2) {
-      await db.updateOrder(parts[0], { status: parts[1] });
-      return ctx.reply(`✅ Status: ${parts[1]}`);
-    }
-  }
-  if (data === "back_worker") return showWorkerMenu(ctx);
-  if (data === "back_admin") return showAdminMenu(ctx);
+  if (d === "back_worker") return showWorkerMenu(ctx);
+  if (d === "back_admin") return showAdminMenu(ctx);
 });
 
 // ── Menyular ──
 async function showWorkerMenu(ctx) {
-  const name = ctx.session.workerName;
+  const s = ctx.session;
   const prices = await db.getPrices();
-  const wp = await db.getWorkerPrices(ctx.session.workerId);
+  const wp = await db.getWorkerPrices(s.workerId);
+  const btns = [
+    [Markup.button.callback("📝 Yangi Buyurtma", "new_order")],
+    [Markup.button.callback("📋 Buyurtmalarim", "my_orders"), Markup.button.callback("💰 Narxlar", "worker_prices")],
+  ];
+  if (WEBAPP_URL) btns.push([Markup.button.webApp("🌐 To'liq Panel", WEBAPP_URL)]);
   return ctx.reply(
-    `👤 *${name}* — Reklama Studio\n\n` +
-    `💰 Narxlar:\n` +
-    `  Banner: *${formatPrice(wp.banner || prices.banner)}*/m²\n` +
-    `  Arakal: *${formatPrice(wp.arakal || prices.arakal)}*/m²\n` +
-    `  Setka: *${formatPrice(wp.setka || prices.setka)}*/m²`,
-    {
-      parse_mode: "Markdown",
-      ...Markup.inlineKeyboard([
-        [Markup.button.callback("📝 Yangi Buyurtma", "new_order")],
-        [Markup.button.callback("📋 Mening Buyurtmalarim", "my_orders")],
-        [Markup.button.callback("💰 Narxlarni O'zgartirish", "change_prices")],
-      ])
-    }
+    `👤 *${s.workerName}*\n\n💰 Narxlar:\n` +
+    `  Banner: *${formatPrice(wp.banner||prices.banner)}*/m²\n` +
+    `  Arakal: *${formatPrice(wp.arakal||prices.arakal)}*/m²\n` +
+    `  Setka: *${formatPrice(wp.setka||prices.setka)}*/m²`,
+    { parse_mode:"Markdown", ...Markup.inlineKeyboard(btns) }
   );
 }
 
 async function showAdminMenu(ctx) {
   const orders = await db.getAllOrders();
-  const active = orders.filter(o => o.status !== "bekor" && o.status !== "arxiv");
-  const debts = active.filter(o => (o.debtAmount || 0) > 0);
-  const totalDebt = debts.reduce((s, o) => s + (o.debtAmount || 0), 0);
+  const active = orders.filter(o=>o.status!=="bekor"&&o.status!=="arxiv");
+  const debts = active.filter(o=>(o.debtAmount||0)>0);
+  const totalDebt = debts.reduce((s,o)=>s+(o.debtAmount||0),0);
+  const btns = [
+    [Markup.button.callback("📋 Buyurtmalar", "admin_orders"), Markup.button.callback("💸 Qarzlar", "admin_debts")],
+    [Markup.button.callback("💰 Kassa", "admin_kassa"), Markup.button.callback("📐 m² Hisobot", "admin_m2")],
+    [Markup.button.callback("👷 Ishchilar", "admin_workers"), Markup.button.callback("⚙️ Narxlar", "admin_prices")],
+    [Markup.button.callback("📥 Kirim qo'shish", "add_income"), Markup.button.callback("📤 Chiqim qo'shish", "add_expense")],
+  ];
+  if (WEBAPP_URL) btns.push([Markup.button.webApp("🌐 To'liq Panel", WEBAPP_URL)]);
   return ctx.reply(
-    `🔐 *Admin Panel*\n\n` +
-    `📋 Faol buyurtmalar: *${active.length}* ta\n` +
-    `💸 Umumiy qarz: *${formatPrice(totalDebt)}* (${debts.length} ta)`,
-    {
-      parse_mode: "Markdown",
-      ...Markup.inlineKeyboard([
-        [Markup.button.callback("📋 Buyurtmalar", "admin_orders"), Markup.button.callback("💸 Qarzlar", "admin_debts")],
-        [Markup.button.callback("📐 m² Hisobot", "admin_m2report"), Markup.button.callback("💰 Kassa", "admin_report")],
-        [Markup.button.callback("👷 Ishchilar", "admin_workers"), Markup.button.callback("⚙️ Narxlar", "admin_prices")],
-      ])
-    }
+    `🔐 *Admin Panel*\n\n📋 Faol: *${active.length}* ta\n💸 Qarz: *${formatPrice(totalDebt)}* (${debts.length} ta)`,
+    { parse_mode:"Markdown", ...Markup.inlineKeyboard(btns) }
   );
 }
 
-async function showAddItemMenu(ctx) {
-  const items = ctx.session.order.items || [];
-  let text = "🛒 *Mahsulot qo'shish*\n";
-  if (items.length > 0) {
-    text += `\nQo'shilganlar (${items.length} ta):\n`;
-    items.forEach((it, i) => {
-      text += `${i+1}. ${it.material} — ${formatPrice(it.total)}\n`;
-    });
-    text += `\n💰 Jami: *${formatPrice(items.reduce((s,i)=>s+i.total,0))}*\n`;
+async function showItemMenu(ctx) {
+  const items = ctx.session.ord?.items || [];
+  let text = "🛒 *Mahsulot qo'shish*";
+  if (items.length) {
+    text += `\n\nQo'shilganlar (${items.length}):\n`;
+    items.forEach((it,i) => { text += `${i+1}. ${it.material} — *${formatPrice(it.total)}*\n`; });
+    text += `\n💰 Jami: *${formatPrice(items.reduce((a,i)=>a+i.total,0))}*`;
   }
-  text += "\nQaysi material?";
   return ctx.reply(text, {
-    parse_mode: "Markdown",
+    parse_mode:"Markdown",
     ...Markup.inlineKeyboard([
-      [Markup.button.callback("🖼 Banner", "item_type_banner"), Markup.button.callback("🖼 Arakal", "item_type_arakal")],
-      [Markup.button.callback("🕸 Setka", "item_type_setka"), Markup.button.callback("3D Harf", "item_type_harf3d")],
+      [Markup.button.callback("🖼 Banner", "it_banner"), Markup.button.callback("🖼 Arakal", "it_arakal")],
+      [Markup.button.callback("🕸 Setka", "it_setka"), Markup.button.callback("✏️ 3D Harf", "it_harf3d")],
       [Markup.button.callback("✅ Tulovga o'tish", "item_done")],
     ])
   });
 }
 
-async function showPaymentMenu(ctx, total, paid) {
+async function showPayMenu(ctx, total, paid) {
   const debt = total - paid;
   return ctx.reply(
-    `💳 *Tulov holati*\nJami: ${formatPrice(total)}\nTo'langan: ${formatPrice(paid)}\n${debt > 0 ? "Qoldi: *" + formatPrice(debt) + "*" : "✅ To'liq to'langan"}`,
+    `💳 Jami: *${formatPrice(total)}*\nTo'langan: *${formatPrice(paid)}*\n${debt>0?"Qoldi: *"+formatPrice(debt)+"*":"✅ To'liq"}`,
     {
-      parse_mode: "Markdown",
+      parse_mode:"Markdown",
       ...Markup.inlineKeyboard([
-        debt > 0 ? [Markup.button.callback("➕ Yana tulov", "pay_add_more")] : [],
-        [Markup.button.callback("✅ To'liq to'langan deb saqlash", "pay_done_full")],
-        debt > 0 ? [Markup.button.callback("💸 Qarz bilan saqlash", "pay_done_debt")] : [],
-      ].filter(r => r.length > 0))
+        debt>0?[Markup.button.callback("➕ Yana tulov", "pay_more")]:[],
+        [Markup.button.callback("✅ Saqlash (to'liq)", "pay_full")],
+        debt>0?[Markup.button.callback("💸 Qarz bilan saqlash", "pay_debt")]:[],
+      ].filter(r=>r.length))
     }
   );
 }
 
-async function showChangePricesMenu(ctx) {
+async function showWorkerPricesMenu(ctx) {
   const prices = await db.getPrices();
   const wp = await db.getWorkerPrices(ctx.session.workerId);
   return ctx.reply(
-    `💰 *Narxlarni O'zgartirish*\n\nJoriy narxlar:\nBanner: ${formatPrice(wp.banner || prices.banner)}/m²\nArakal: ${formatPrice(wp.arakal || prices.arakal)}/m²\nSetka: ${formatPrice(wp.setka || prices.setka)}/m²`,
-    {
-      parse_mode: "Markdown",
-      ...Markup.inlineKeyboard([
-        [Markup.button.callback("Banner narxi", "set_price_banner")],
-        [Markup.button.callback("Arakal narxi", "set_price_arakal")],
-        [Markup.button.callback("Setka narxi", "set_price_setka")],
-        [Markup.button.callback("◀️ Orqaga", "back_worker")],
-      ])
-    }
+    `💰 *Narxlar (1 m²)*\nBanner: *${formatPrice(wp.banner||prices.banner)}*\nArakal: *${formatPrice(wp.arakal||prices.arakal)}*\nSetka: *${formatPrice(wp.setka||prices.setka)}*`,
+    { parse_mode:"Markdown", ...Markup.inlineKeyboard([
+      [Markup.button.callback("Banner", "wp_banner")],
+      [Markup.button.callback("Arakal", "wp_arakal")],
+      [Markup.button.callback("Setka", "wp_setka")],
+      [Markup.button.callback("◀️ Orqaga", "back_worker")],
+    ])}
   );
 }
 
 async function showMyOrders(ctx) {
   const orders = await db.getWorkerOrders(ctx.session.workerId);
   if (!orders.length) return ctx.reply("Hali buyurtma yo'q.");
-  const recent = orders.slice(0, 10);
-  let text = `📋 *Mening buyurtmalarim* (oxirgi ${recent.length}):\n\n`;
-  recent.forEach((o, i) => {
-    const statusEmoji = { qabul:"✅",qarz:"💸",dizayn:"🎨",pechat:"🖨",chiqdi:"📦",ishxona:"🏭",arxiv:"📁",bekor:"❌" };
-    text += `${i+1}. ${statusEmoji[o.status]||"•"} *${o.client.name}*\n`;
+  const em = { qabul:"✅",qarz:"💸",dizayn:"🎨",pechat:"🖨",chiqdi:"📦",ishxona:"🏭",arxiv:"📁",bekor:"❌" };
+  let text = `📋 *Oxirgi buyurtmalar:*\n\n`;
+  orders.slice(0,10).forEach((o,i) => {
+    text += `${i+1}. ${em[o.status]||"•"} *${o.client.name}*\n`;
     text += `   📌 ${o.client.topic} — ${formatPrice(o.totalPrice)}\n`;
-    text += `   📅 ${o.date}\n`;
-    if ((o.debtAmount || 0) > 0) text += `   💸 Qarz: ${formatPrice(o.debtAmount)}\n`;
-    text += "\n";
+    if ((o.debtAmount||0)>0) text += `   💸 Qarz: ${formatPrice(o.debtAmount)}\n`;
+    text += `   📅 ${o.date}\n\n`;
   });
-  return ctx.reply(text, { parse_mode: "Markdown" });
+  return ctx.reply(text, { parse_mode:"Markdown", ...Markup.inlineKeyboard([[Markup.button.callback("◀️ Orqaga","back_worker")]]) });
 }
 
 async function showAdminOrders(ctx) {
   const orders = await db.getAllOrders();
-  const active = orders.filter(o => o.status !== "bekor" && o.status !== "arxiv").slice(0, 8);
-  if (!active.length) return ctx.reply("Faol buyurtmalar yo'q.", Markup.inlineKeyboard([[Markup.button.callback("◀️ Orqaga", "back_admin")]]));
+  const active = orders.filter(o=>o.status!=="bekor"&&o.status!=="arxiv").slice(0,8);
+  if (!active.length) return ctx.reply("Faol buyurtmalar yo'q.", Markup.inlineKeyboard([[Markup.button.callback("◀️","back_admin")]]));
   for (const o of active) {
-    const statusLabels = { kutilmoqda:"⏳",tulovsiz:"🚫",qarz:"💸",qabul:"✅",dizayn:"🎨",pechat:"🖨️",chiqdi:"📦",ishxona:"🏭" };
-    const text =
-      `${statusLabels[o.status]||"•"} *${o.client.name}* | ${o.client.phone}\n` +
-      `📌 ${o.client.topic}\n` +
-      `👤 ${o.worker} | 📅 ${o.date}\n` +
-      `💰 Jami: ${formatPrice(o.totalPrice)} | To'ldi: ${formatPrice(o.paidAmount)}` +
-      ((o.debtAmount||0)>0?`\n💸 Qarz: *${formatPrice(o.debtAmount)}*`:"");
+    const em={kutilmoqda:"⏳",tulovsiz:"🚫",qarz:"💸",qabul:"✅",dizayn:"🎨",pechat:"🖨️",chiqdi:"📦",ishxona:"🏭"};
+    const text=`${em[o.status]||"•"} *${o.client.name}* | ${o.client.phone}\n📌 ${o.client.topic}\n👤 ${o.worker} | 📅 ${o.date}\n💰 ${formatPrice(o.totalPrice)} | ✅ ${formatPrice(o.paidAmount)}${(o.debtAmount||0)>0?"\n💸 Qarz: *"+formatPrice(o.debtAmount)+"*":""}`;
     const btns = [
-      [Markup.button.callback("🎉 Olib ketti", `pickup_${o.id}`), Markup.button.callback("❌ Bekor", `cancel_order_${o.id}`)],
+      [Markup.button.callback("🎉 Olib ketti",`pu_${o.id}`), Markup.button.callback("❌ Bekor",`cn_${o.id}`)],
+      [Markup.button.callback("🎨 Dizayn",`st_${o.id}_dizayn`), Markup.button.callback("🖨 Pechat",`st_${o.id}_pechat`), Markup.button.callback("📦 Tayyor",`st_${o.id}_chiqdi`)],
     ];
-    if ((o.debtAmount||0)>0) btns.push([Markup.button.callback("💰 Qarz to'lovi", `debt_pay_${o.id}`)]);
-    btns.push([
-      Markup.button.callback("🎨 Dizayn", `status__${o.id}__dizayn`),
-      Markup.button.callback("🖨 Pechat", `status__${o.id}__pechat`),
-      Markup.button.callback("📦 Tayyor", `status__${o.id}__chiqdi`),
-    ]);
-    await ctx.reply(text, { parse_mode: "Markdown", ...Markup.inlineKeyboard(btns) });
+    if ((o.debtAmount||0)>0) btns.push([Markup.button.callback("💰 Qarz to'lovi",`dp_${o.id}`)]);
+    await ctx.reply(text, { parse_mode:"Markdown", ...Markup.inlineKeyboard(btns) });
   }
 }
 
 async function showAdminDebts(ctx) {
   const orders = await db.getAllOrders();
-  const debts = orders.filter(o => (o.debtAmount||0)>0 && o.status!=="bekor" && o.status!=="arxiv");
-  if (!debts.length) return ctx.reply("🎉 Qarz yo'q!", Markup.inlineKeyboard([[Markup.button.callback("◀️ Orqaga", "back_admin")]]));
+  const debts = orders.filter(o=>(o.debtAmount||0)>0&&o.status!=="bekor"&&o.status!=="arxiv");
+  if (!debts.length) return ctx.reply("🎉 Qarz yo'q!", Markup.inlineKeyboard([[Markup.button.callback("◀️","back_admin")]]));
   const total = debts.reduce((s,o)=>s+(o.debtAmount||0),0);
-  await ctx.reply(`💸 *Qarzlar: ${debts.length} ta*\nJami: *${formatPrice(total)}*`, { parse_mode: "Markdown" });
+  await ctx.reply(`💸 *Qarzlar: ${debts.length} ta*\nJami: *${formatPrice(total)}*`,{parse_mode:"Markdown"});
   for (const o of debts.slice(0,10)) {
-    const text = `👤 *${o.client.name}* | ${o.client.phone}\n📌 ${o.client.topic}\n💸 Qarz: *${formatPrice(o.debtAmount)}*\n✅ To'ldi: ${formatPrice(o.paidAmount)}\n📅 ${o.date}`;
-    await ctx.reply(text, {
-      parse_mode: "Markdown",
-      ...Markup.inlineKeyboard([[Markup.button.callback("💰 To'lov qabul qilish", `debt_pay_${o.id}`)]])
-    });
+    await ctx.reply(
+      `👤 *${o.client.name}* | ${o.client.phone}\n📌 ${o.client.topic}\n💸 Qarz: *${formatPrice(o.debtAmount)}*\n✅ To'ldi: ${formatPrice(o.paidAmount)}\n📅 ${o.date} | ${o.worker}`,
+      { parse_mode:"Markdown", ...Markup.inlineKeyboard([[Markup.button.callback("💰 To'lov qabul",`dp_${o.id}`)]]) }
+    );
   }
 }
 
-async function showAdminReport(ctx) {
+async function showKassa(ctx) {
   const orders = await db.getAllOrders();
-  const now = new Date();
-  const thisMonth = orders.filter(o => {
-    const d = new Date(o.timestamp);
-    return d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth() && o.status!=="bekor";
-  });
   const expenses = await db.getExpenses();
-  const thisMonthExp = expenses.filter(e => {
-    const d = new Date(e.timestamp);
-    return d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth();
-  });
-  const kirim = thisMonth.reduce((s,o)=>s+o.paidAmount,0);
-  const chiqim = thisMonthExp.reduce((s,e)=>s+e.amount,0);
-  const months = ["Yanvar","Fevral","Mart","Aprel","May","Iyun","Iyul","Avgust","Sentabr","Oktabr","Noyabr","Dekabr"];
-  return ctx.reply(
-    `💰 *Kassa — ${months[now.getMonth()]} ${now.getFullYear()}*\n\n` +
-    `📥 Kirim: *${formatPrice(kirim)}*\n` +
-    `📤 Chiqim: *${formatPrice(chiqim)}*\n` +
-    `💼 Qoldi: *${formatPrice(kirim-chiqim)}*\n\n` +
-    `📊 Buyurtmalar: ${thisMonth.length} ta`,
-    { parse_mode: "Markdown", ...Markup.inlineKeyboard([[Markup.button.callback("◀️ Orqaga", "back_admin")]]) }
-  );
-}
-
-async function showM2Report(ctx) {
-  const orders = await db.getAllOrders();
+  const incomes = await db.getIncomes();
   const now = new Date();
-  const thisMonth = orders.filter(o => {
-    const d = new Date(o.timestamp);
-    return d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth() && o.status!=="bekor";
-  });
-  const mats = { banner: {m2:0,rev:0}, arakal: {m2:0,rev:0}, setka: {m2:0,rev:0} };
-  const matNames = { banner:"Banner", arakal:"Arakal", setka:"Setka" };
-  thisMonth.forEach(o => {
-    o.items.forEach(it => {
-      const key = Object.keys(matNames).find(k => matNames[k]===it.material);
-      if (key && it.billedAreaM2) {
-        mats[key].m2 += it.billedAreaM2 * (it.qty||1);
-        mats[key].rev += it.total||0;
-      }
-    });
-  });
-  const months = ["Yanvar","Fevral","Mart","Aprel","May","Iyun","Iyul","Avgust","Sentabr","Oktabr","Noyabr","Dekabr"];
-  const totalM2 = Object.values(mats).reduce((s,v)=>s+v.m2,0);
-  const totalRev = Object.values(mats).reduce((s,v)=>s+v.rev,0);
-  return ctx.reply(
-    `📐 *m² Hisobot — ${months[now.getMonth()]}*\n\n` +
-    `🖼 Banner: *${mats.banner.m2.toFixed(2)} m²* — ${formatPrice(mats.banner.rev)}\n` +
-    `🖼 Arakal: *${mats.arakal.m2.toFixed(2)} m²* — ${formatPrice(mats.arakal.rev)}\n` +
-    `🕸 Setka: *${mats.setka.m2.toFixed(2)} m²* — ${formatPrice(mats.setka.rev)}\n\n` +
-    `📊 Jami: *${totalM2.toFixed(2)} m²*\n` +
-    `💰 Jami daromad: *${formatPrice(totalRev)}*`,
-    { parse_mode: "Markdown", ...Markup.inlineKeyboard([[Markup.button.callback("◀️ Orqaga", "back_admin")]]) }
-  );
-}
-
-async function showAdminWorkers(ctx) {
-  const workers = await db.getAllWorkers();
-  let text = "👷 *Ishchilar:*\n\n";
-  workers.forEach((w,i) => { text += `${i+1}. *${w.name}*\n`; });
+  const thisMonth = o => { const d=new Date(o.timestamp); return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth(); };
+  const mOrders = orders.filter(o=>thisMonth(o)&&o.status!=="bekor");
+  const mExp = expenses.filter(thisMonth);
+  const mInc = incomes.filter(thisMonth);
+  const kirim = mOrders.reduce((s,o)=>s+o.paidAmount,0) + mInc.reduce((s,i)=>s+i.amount,0);
+  const chiqim = mExp.reduce((s,e)=>s+e.amount,0);
+  const months=["Yanvar","Fevral","Mart","Aprel","May","Iyun","Iyul","Avgust","Sentabr","Oktabr","Noyabr","Dekabr"];
+  let text = `💰 *Kassa — ${months[now.getMonth()]} ${now.getFullYear()}*\n\n`;
+  text += `📥 Kirim: *${formatPrice(kirim)}*\n`;
+  text += `  └ Buyurtmalar: ${formatPrice(mOrders.reduce((s,o)=>s+o.paidAmount,0))}\n`;
+  text += `  └ Qo'shimcha: ${formatPrice(mInc.reduce((s,i)=>s+i.amount,0))}\n\n`;
+  text += `📤 Chiqim: *${formatPrice(chiqim)}*\n\n`;
+  text += `💼 Qoldi: *${formatPrice(kirim-chiqim)}*\n\n`;
+  text += `📊 Buyurtmalar: ${mOrders.length} ta`;
+  if (mExp.length) {
+    text += `\n\n📤 *Chiqimlar:*\n`;
+    mExp.slice(0,5).forEach(e => { text += `• ${e.category}: ${formatPrice(e.amount)}\n`; });
+  }
   return ctx.reply(text, {
-    parse_mode: "Markdown",
+    parse_mode:"Markdown",
     ...Markup.inlineKeyboard([
-      [Markup.button.callback("➕ Yangi ishchi qo'shish", "admin_add_worker")],
-      [Markup.button.callback("◀️ Orqaga", "back_admin")],
+      [Markup.button.callback("📥 Kirim qo'shish","add_income"), Markup.button.callback("📤 Chiqim qo'shish","add_expense")],
+      [Markup.button.callback("◀️ Orqaga","back_admin")],
     ])
   });
 }
 
-async function showAdminPricesMenu(ctx) {
-  const prices = await db.getPrices();
+async function showM2(ctx) {
+  const orders = await db.getAllOrders();
+  const now = new Date();
+  const mOrders = orders.filter(o => {
+    const d=new Date(o.timestamp);
+    return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth()&&o.status!=="bekor";
+  });
+  const mats={banner:{n:"Banner",m2:0,rev:0},arakal:{n:"Arakal",m2:0,rev:0},setka:{n:"Setka",m2:0,rev:0}};
+  mOrders.forEach(o=>o.items.forEach(it=>{
+    const k=Object.keys(mats).find(k=>mats[k].n===it.material);
+    if(k&&it.billedAreaM2){mats[k].m2+=it.billedAreaM2*(it.qty||1);mats[k].rev+=it.total||0;}
+  }));
+  const totalM2=Object.values(mats).reduce((s,v)=>s+v.m2,0);
+  const totalRev=Object.values(mats).reduce((s,v)=>s+v.rev,0);
+  const months=["Yanvar","Fevral","Mart","Aprel","May","Iyun","Iyul","Avgust","Sentabr","Oktabr","Noyabr","Dekabr"];
+  let text=`📐 *m² Hisobot — ${months[now.getMonth()]} ${now.getFullYear()}*\n\n`;
+  text+=`🖼 Banner: *${mats.banner.m2.toFixed(2)} m²* — ${formatPrice(mats.banner.rev)}\n`;
+  text+=`🖼 Arakal: *${mats.arakal.m2.toFixed(2)} m²* — ${formatPrice(mats.arakal.rev)}\n`;
+  text+=`🕸 Setka: *${mats.setka.m2.toFixed(2)} m²* — ${formatPrice(mats.setka.rev)}\n\n`;
+  text+=`📊 Jami: *${totalM2.toFixed(2)} m²*\n💰 Daromad: *${formatPrice(totalRev)}*\n\n`;
+  // Ishchi breakdown
+  const wnames=[...new Set(mOrders.map(o=>o.worker))].filter(Boolean);
+  if(wnames.length){
+    text+=`*Ishchi bo'yicha:*\n`;
+    wnames.forEach(wn=>{
+      const wo=mOrders.filter(o=>o.worker===wn);
+      const wm={banner:0,arakal:0,setka:0};
+      wo.forEach(o=>o.items.forEach(it=>{const k=Object.keys(mats).find(k=>mats[k].n===it.material);if(k&&it.billedAreaM2)wm[k]+=it.billedAreaM2*(it.qty||1);}));
+      text+=`👤 ${wn}: Banner ${wm.banner.toFixed(1)}m² | Arakal ${wm.arakal.toFixed(1)}m² | Setka ${wm.setka.toFixed(1)}m²\n`;
+    });
+  }
+  return ctx.reply(text, { parse_mode:"Markdown", ...Markup.inlineKeyboard([[Markup.button.callback("◀️ Orqaga","back_admin")]]) });
+}
+
+async function showWorkers(ctx) {
+  const workers = await db.getAllWorkers();
+  let text = "👷 *Ishchilar:*\n\n";
+  workers.forEach((w,i)=>{ text+=`${i+1}. *${w.name}*\n`; });
+  return ctx.reply(text, { parse_mode:"Markdown", ...Markup.inlineKeyboard([
+    [Markup.button.callback("➕ Yangi ishchi","admin_add_worker")],
+    [Markup.button.callback("◀️ Orqaga","back_admin")],
+  ])});
+}
+
+async function showAdminPrices(ctx) {
+  const p = await db.getPrices();
   return ctx.reply(
-    `⚙️ *Narxlar:*\nBanner: ${formatPrice(prices.banner)}/m²\nArakal: ${formatPrice(prices.arakal)}/m²\nSetka: ${formatPrice(prices.setka)}/m²`,
-    {
-      parse_mode: "Markdown",
-      ...Markup.inlineKeyboard([
-        [Markup.button.callback("Banner narxi", "admin_set_price_banner")],
-        [Markup.button.callback("Arakal narxi", "admin_set_price_arakal")],
-        [Markup.button.callback("Setka narxi", "admin_set_price_setka")],
-        [Markup.button.callback("◀️ Orqaga", "back_admin")],
-      ])
-    }
+    `⚙️ *Narxlar:*\nBanner: ${formatPrice(p.banner)}/m²\nArakal: ${formatPrice(p.arakal)}/m²\nSetka: ${formatPrice(p.setka)}/m²`,
+    { parse_mode:"Markdown", ...Markup.inlineKeyboard([
+      [Markup.button.callback("Banner","ap_banner")],
+      [Markup.button.callback("Arakal","ap_arakal")],
+      [Markup.button.callback("Setka","ap_setka")],
+      [Markup.button.callback("◀️ Orqaga","back_admin")],
+    ])}
   );
 }
 
 async function saveOrder(ctx, isDebt) {
-  const o = ctx.session.order;
-  const tp = o.items.reduce((s, i) => s + i.total, 0);
-  const pa = (o.payments || []).reduce((s, p) => s + p.amount, 0);
-  const da = isDebt ? Math.max(0, tp - pa) : 0;
-  const actualPa = isDebt ? pa : tp;
+  const s = ctx.session;
+  const o = s.ord;
+  const tp = o.items.reduce((a,i)=>a+i.total,0);
+  const pa = (o.payments||[]).reduce((a,p)=>a+p.amount,0);
+  const da = isDebt ? Math.max(0,tp-pa) : 0;
   const order = {
-    id: genId("ORD"),
-    date: nowStr(),
-    timestamp: Date.now(),
-    worker: ctx.session.workerName,
-    workerId: ctx.session.workerId,
-    client: { name: o.clientName, phone: o.clientPhone, topic: o.topic },
-    items: o.items,
-    totalPrice: tp,
-    paidAmount: actualPa,
-    debtAmount: da,
-    payments: o.payments || [],
-    status: da > 0 ? "qarz" : "qabul"
+    id: genId("ORD"), date: nowStr(), timestamp: Date.now(),
+    worker: s.workerName, workerId: s.workerId,
+    client: { name:o.clientName, phone:o.clientPhone, topic:o.topic },
+    items: o.items, totalPrice:tp, paidAmount:isDebt?pa:tp,
+    debtAmount:da, payments:o.payments||[], status:da>0?"qarz":"qabul"
   };
   await db.saveOrder(order);
-  ctx.session.step = null;
-  ctx.session.order = {};
-  await ctx.reply(
-    `✅ *Buyurtma saqlandi!*\n\n` +
-    `👤 ${order.client.name} | ${order.client.phone}\n` +
-    `📌 ${order.client.topic}\n` +
-    `🆔 ${order.id}\n` +
-    `💰 Jami: ${formatPrice(tp)}\n` +
-    `✅ To'langan: ${formatPrice(actualPa)}\n` +
-    (da > 0 ? `💸 Qarz: *${formatPrice(da)}*\n` : "") +
-    `\nMahsulotlar:\n` +
-    order.items.map(it => `• ${it.material} — ${formatPrice(it.total)}`).join("\n"),
-    { parse_mode: "Markdown" }
-  );
-  // Admin ga xabar yuborish
+  s.step = null; s.ord = {};
+
+  // Chek xabari
+  let chek = `🧾 *BUYURTMA CHEKI*\n${"─".repeat(25)}\n`;
+  chek += `🆔 ${order.id}\n📅 ${order.date}\n👤 ${order.worker}\n\n`;
+  chek += `*MIJOZ:*\n👤 ${order.client.name}\n📱 ${order.client.phone}\n📌 ${order.client.topic}\n\n`;
+  chek += `*MAHSULOTLAR:*\n`;
+  order.items.forEach((it,i) => {
+    chek += `${i+1}. ${it.material}\n`;
+    if (it.billedAreaM2>0) chek += `   ${it.custWidth}×${it.custLength}sm | ${it.billedAreaM2.toFixed(3)}m² | ${it.qty}ta\n`;
+    if (it.harf3dDesc) chek += `   ${it.harf3dDesc}\n`;
+    chek += `   💰 ${formatPrice(it.total)}\n`;
+  });
+  chek += `\n${"─".repeat(25)}\n`;
+  chek += `💰 Jami: *${formatPrice(tp)}*\n`;
+  (order.payments||[]).forEach(p => { chek += `  ${p.method==="naqd"?"💵":"💳"} ${p.method}: ${formatPrice(p.amount)}\n`; });
+  chek += `✅ To'langan: *${formatPrice(order.paidAmount)}*\n`;
+  if (da>0) chek += `💸 Qarz: *${formatPrice(da)}*\n`;
+  chek += `\n📣 ZIYOdizayn | 88 111 37 36`;
+
+  await ctx.reply(chek, { parse_mode:"Markdown" });
+
+  // Admin ga xabar
   for (const adminId of ADMIN_IDS) {
     try {
       await bot.telegram.sendMessage(adminId,
         `🔔 *Yangi buyurtma!*\n👤 ${order.client.name}\n📌 ${order.client.topic}\n💰 ${formatPrice(tp)}\n👷 ${order.worker}`,
-        { parse_mode: "Markdown" }
+        { parse_mode:"Markdown" }
       );
     } catch(e) {}
   }
   return showWorkerMenu(ctx);
 }
 
-// ── Haftalik qarz eslatmasi (Dushanba) ──
-async function sendWeeklyDebtReminder() {
-  const orders = await db.getAllOrders();
-  const debts = orders.filter(o => (o.debtAmount||0)>0 && o.status!=="bekor" && o.status!=="arxiv");
-  if (!debts.length) return;
-  const total = debts.reduce((s,o)=>s+(o.debtAmount||0),0);
-  let msg = `⚠️ *Haftalik Qarz Eslatmasi*\n\n${debts.length} ta to'lanmagan qarz:\nJami: *${formatPrice(total)}*\n\n`;
-  debts.slice(0,10).forEach((o,i) => {
-    msg += `${i+1}. ${o.client.name} — *${formatPrice(o.debtAmount)}*\n   📱 ${o.client.phone}\n`;
-  });
-  for (const adminId of ADMIN_IDS) {
-    try { await bot.telegram.sendMessage(adminId, msg, { parse_mode: "Markdown" }); } catch(e) {}
-  }
-}
-
-// Dushanba 9:00 da eslatma
-function scheduleWeeklyReminder() {
-  const checkTime = () => {
+// Haftalik eslatma
+function scheduleReminder() {
+  setInterval(async () => {
     const now = new Date();
-    if (now.getDay() === 1 && now.getHours() === 9 && now.getMinutes() === 0) {
-      sendWeeklyDebtReminder();
+    if (now.getDay()===1 && now.getHours()===9 && now.getMinutes()===0) {
+      const orders = await db.getAllOrders();
+      const debts = orders.filter(o=>(o.debtAmount||0)>0&&o.status!=="bekor"&&o.status!=="arxiv");
+      if (!debts.length) return;
+      const total = debts.reduce((s,o)=>s+(o.debtAmount||0),0);
+      let msg = `⚠️ *Haftalik Qarz Eslatmasi*\n${debts.length} ta qarz | Jami: *${formatPrice(total)}*\n\n`;
+      debts.slice(0,8).forEach((o,i) => { msg += `${i+1}. ${o.client.name} — *${formatPrice(o.debtAmount)}*\n   📱 ${o.client.phone}\n`; });
+      for (const adminId of ADMIN_IDS) {
+        try { await bot.telegram.sendMessage(adminId, msg, { parse_mode:"Markdown" }); } catch(e) {}
+      }
     }
-  };
-  setInterval(checkTime, 60 * 1000); // har daqiqa tekshiradi
+  }, 60000);
 }
 
-scheduleWeeklyReminder();
+scheduleReminder();
 bot.launch();
-console.log("Bot ishga tushdi! ✅");
+console.log("✅ Bot ishga tushdi!");
 process.once("SIGINT", () => bot.stop("SIGINT"));
 process.once("SIGTERM", () => bot.stop("SIGTERM"));

@@ -1,739 +1,578 @@
 <!DOCTYPE html>
 <html lang="uz">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
-<title>Reklama Studio — Telegram App</title>
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Segoe UI',sans-serif;background:#0f0f0f;color:#fff;min-height:100vh}
-input,select,textarea{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;color:#fff;padding:10px 12px;font-size:14px;outline:none;width:100%;box-sizing:border-box}
-input:focus,select:focus,textarea:focus{border-color:#f59e0b}
-.btn{width:100%;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:700;cursor:pointer}
-.btn-yellow{background:#f59e0b;color:#000}
-.btn-green{background:#10b981;color:#fff}
-.btn-red{background:#ef4444;color:#fff}
-.btn-blue{background:#2563eb;color:#fff}
-.btn-gray{background:#1a1a1a;border:1px solid #2a2a2a;color:#888}
-.card{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;padding:14px;margin-bottom:10px}
-.card-debt{border-color:#f97316}
-.card-arxiv{border-color:#10b98133;background:#0a1a0a}
-.lbl{font-size:12px;font-weight:700;color:#888;margin-bottom:6px;display:block;margin-top:12px}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
-.stat{background:#1a1a1a;border-radius:10px;padding:12px;text-align:center}
-.stat-v{font-size:16px;font-weight:800}
-.stat-l{font-size:11px;color:#666;margin-top:3px}
-.badge{display:inline-block;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700}
-.header{background:#1a1a1a;border-bottom:1px solid #2a2a2a;padding:12px 16px;position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between}
-.tabs{display:flex;gap:6px;padding:10px 16px;overflow-x:auto;background:#1a1a1a;border-bottom:1px solid #2a2a2a;position:sticky;top:57px;z-index:99}
-.tab{background:#111;border:1px solid #2a2a2a;color:#888;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0}
-.tab.active{background:#f59e0b;color:#000;border-color:#f59e0b}
-.page{display:none;padding:16px;max-width:700px;margin:0 auto}
-.page.active{display:block}
-.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:200;align-items:center;justify-content:center;padding:16px;overflow-y:auto}
-.modal.open{display:flex}
-.modal-box{background:#1a1a1a;border-radius:14px;padding:20px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto}
-.filter-row{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
-.fbtn{background:#111;border:1px solid #2a2a2a;color:#888;border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;font-weight:700}
-.fbtn.active{background:#f59e0b;color:#000;border-color:#f59e0b}
-#loading{position:fixed;inset:0;background:#0f0f0f;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;z-index:999}
-.spinner{width:36px;height:36px;border:3px solid #2a2a2a;border-top-color:#f59e0b;border-radius:50%;animation:spin 0.8s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-.empty{text-align:center;padding:40px 20px;color:#444}
-.bar{background:#111;border-radius:4px;height:6px;margin-top:6px;overflow:hidden}
-.bar-fill{height:100%;border-radius:4px}
-.tag{display:inline-block;padding:2px 8px;border-radius:5px;font-size:11px;font-weight:700;margin-right:4px}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Reklama Studio Premium App</title>
+    <!-- Supabase CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        /* iOS Light Mode Global Stillari */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: #F2F2F7;
+            color: #1C1C1E;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Navigatsiya */
+        .ios-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .ios-header h1 {
+            font-size: 26px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .settings-btn {
+            background: none;
+            border: none;
+            font-size: 26px;
+            cursor: pointer;
+            padding: 4px;
+            transition: transform 0.2s ease;
+        }
+
+        .settings-btn:active {
+            transform: scale(0.9);
+        }
+
+        /* Dinamik Qarz Bildirishnomasi (iOS Alert Banner) */
+        .ios-debt-alert {
+            background: #FFD60A;
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            animation: slideDown 0.3s ease;
+        }
+
+        .ios-debt-alert p {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1C1C1E;
+        }
+
+        /* Kvadrat m² Vidjetlari */
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: #FFFFFF;
+            border-radius: 14px;
+            padding: 14px 8px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+        }
+
+        .stat-card .title {
+            font-size: 11px;
+            font-weight: 600;
+            color: #8E8E93;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .stat-card .value {
+            font-size: 16px;
+            font-weight: 700;
+            color: #007AFF;
+        }
+
+        /* iOS Segmented Control */
+        .segmented-control {
+            display: flex;
+            background: #E5E5EA;
+            border-radius: 9px;
+            padding: 2px;
+            margin-bottom: 20px;
+        }
+
+        .segment-item {
+            flex: 1;
+            background: none;
+            border: none;
+            padding: 8px 0;
+            font-size: 13px;
+            font-weight: 600;
+            color: #1C1C1E;
+            cursor: pointer;
+            border-radius: 7px;
+            transition: all 0.2s ease;
+        }
+
+        .segment-item.active {
+            background: #FFFFFF;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.12);
+        }
+
+        /* Formalar Guruhi (Oq blok) */
+        .ios-form-group {
+            background: #FFFFFF;
+            border-radius: 14px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .ios-input-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 16px;
+            border-bottom: 0.5px solid #E5E5EA;
+        }
+
+        .ios-input-row:last-child {
+            border-bottom: none;
+        }
+
+        .ios-input-row label {
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .ios-input-row input, .ios-input-row select {
+            border: none;
+            outline: none;
+            font-size: 16px;
+            color: #007AFF;
+            text-align: right;
+            width: 55%;
+            background: transparent;
+        }
+
+        .ios-input-row input::placeholder {
+            color: #C7C7CC;
+        }
+
+        /* Real vaqt hisob oynasi */
+        .quick-result-box {
+            background: #E4F2FF;
+            border-radius: 14px;
+            padding: 16px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .quick-result-box p {
+            font-size: 15px;
+            font-weight: 600;
+            color: #007AFF;
+        }
+
+        /* iOS Tugmalari */
+        .ios-btn-primary {
+            background: #007AFF;
+            color: #FFFFFF;
+            border: none;
+            border-radius: 14px;
+            padding: 16px;
+            font-size: 17px;
+            font-weight: 600;
+            width: 100%;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,122,255,0.15);
+            transition: all 0.2s ease;
+        }
+
+        .ios-btn-primary:active {
+            transform: scale(0.97);
+            background: #0063CC;
+        }
+
+        /* Yon tarafdagi Admin Panel */
+        .side-settings-panel {
+            position: fixed;
+            top: 0;
+            left: -100%;
+            width: 85%;
+            max-width: 360px;
+            height: 100%;
+            background: #F2F2F7;
+            box-shadow: 5px 0 25px rgba(0,0,0,0.15);
+            z-index: 100;
+            transition: left 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            padding: 20px 16px;
+            overflow-y: auto;
+        }
+
+        .side-settings-panel.open {
+            left: 0;
+        }
+
+        .panel-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.2);
+            z-index: 99;
+            display: none;
+        }
+
+        .panel-overlay.show {
+            display: block;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 12px;
+            color: #8E8E93;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin: 16px 0 6px 8px;
+        }
+
+        @keyframes slideDown {
+            from { transform: translateY(-10px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+    </style>
 </head>
 <body>
 
-<div id="loading">
-  <div class="spinner"></div>
-  <div style="color:#888;font-size:13px">Telegram App Yuklanmoqda...</div>
-</div>
+    <div class="panel-overlay" id="overlay"></div>
 
-<div id="loginPage" style="display:none;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px">
-  <div style="width:100%;max-width:380px">
-    <div style="text-align:center;margin-bottom:20px">
-      <div style="font-size:36px;margin-bottom:8px">📣</div>
-      <div style="font-size:20px;font-weight:800;color:#f59e0b">REKLAMA STUDIO</div>
-      <div style="font-size:12px;color:#555;margin-top:4px">Telegram Mini App</div>
-    </div>
-    <div class="card">
-      <span class="lbl" style="margin-top:0">Profilingizni tanlang</span>
-      <div id="workerButtons" style="display:grid;gap:8px;margin-bottom:14px"></div>
-      <div id="passSection" style="display:none">
-        <span class="lbl">Parol</span>
-        <input type="password" id="passInput" placeholder="Parolni kiriting" style="margin-bottom:10px"/>
-        <div id="passMsg" style="font-size:12px;margin-bottom:10px;display:none"></div>
-        <button class="btn btn-yellow" onclick="doLogin()">Kirish</button>
-      </div>
-    </div>
-    <div class="card" style="margin-top:12px">
-      <span class="lbl" style="margin-top:0;color:#2563eb">🔐 Admin kirish</span>
-      <input type="password" id="adminPassInput" placeholder="Admin paroli" style="margin-bottom:10px"/>
-      <div id="adminPassMsg" style="font-size:12px;margin-bottom:8px;display:none"></div>
-      <button class="btn btn-blue" onclick="doAdminLogin()">Admin sifatida kirish</button>
-    </div>
-  </div>
-</div>
-
-<div id="mainApp" style="display:none">
-  <div class="header">
-    <div style="display:flex;align-items:center;gap:8px">
-      <span style="font-size:20px">📣</span>
-      <div>
-        <div style="font-size:14px;font-weight:700;color:#f59e0b">REKLAMA STUDIO</div>
-        <div style="font-size:11px;color:#555" id="currentUser"></div>
-      </div>
-    </div>
-    <button onclick="doLogout()" style="background:none;border:1px solid #333;color:#888;font-size:11px;padding:5px 12px;border-radius:6px;cursor:pointer">Chiqish</button>
-  </div>
-
-  <div class="tabs" id="mainTabs"></div>
-
-  <div class="page" id="page-neworder">
-    <div class="card" style="border-color:#f59e0b44;margin-bottom:16px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <span style="font-size:13px;font-weight:700;color:#f59e0b">💰 Narxlar (1 m²)</span>
-        <button onclick="savePrices()" style="background:#f59e0b;color:#000;border:none;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer">Saqlash</button>
-      </div>
-      <div class="grid3" id="priceInputs"></div>
-    </div>
-    <div class="card" style="margin-bottom:12px">
-      <span class="lbl" style="margin-top:0">MIJOZ MA'LUMOTLARI</span>
-      <div class="grid2" style="margin-bottom:10px">
-        <div><span class="lbl">Ismi *</span><input id="cName" placeholder="Mijoz ismi"/></div>
-        <div><span class="lbl">Telefon *</span><input id="cPhone" placeholder="+998901234567"/></div>
-      </div>
-      <div class="grid2" style="margin-bottom:10px">
-        <div><span class="lbl">Turi</span>
-          <select id="cType" onchange="toggleClientType()">
-            <option value="tadbirkor">Tadbirkor</option>
-            <option value="davlat">Davlat idorasi</option>
-          </select>
+    <!-- Admin Panel (Sozlamalar + Qarz Boshqaruvi) -->
+    <div class="side-settings-panel" id="settingsPanel">
+        <div class="panel-header">
+            <h2>⚙️ Admin Panel</h2>
+            <button style="color:#007AFF; background:none; border:none; font-size:16px; font-weight:600; cursor:pointer;" id="closePanel">Tayyor</button>
         </div>
-        <div><span class="lbl" id="cExtraLbl">Soha</span><input id="cExtra" placeholder="Faoliyat sohasi"/></div>
-      </div>
-      <span class="lbl">Mavzu *</span>
-      <input id="cTopic" placeholder="Do'kon fasadi, Maktab stendi..."/>
-    </div>
-    <div class="grid2" style="gap:12px;margin-bottom:12px">
-      <div class="card">
-        <span class="lbl" style="margin-top:0">MAHSULOT QO'SHISH</span>
-        <select id="matSel" onchange="onMatChange()" style="margin-bottom:10px">
-          <option value="banner">Banner</option>
-          <option value="arakal">Arakal</option>
-          <option value="setka">Setka</option>
-          <option value="harf3d">3D Harf</option>
-        </select>
-        <div id="matForm"></div>
-        <button class="btn btn-yellow" style="margin-top:10px" onclick="addItem()">➕ Qo'shish</button>
-      </div>
-      <div class="card">
-        <span class="lbl" style="margin-top:0">RO'YXAT (<span id="itemCount">0</span>)</span>
-        <div id="itemsList" style="max-height:220px;overflow-y:auto;margin-bottom:10px">
-          <div class="empty" style="padding:20px">📋 Bo'sh</div>
+
+        <!-- TEPADAGI QARZ BILDIRISHNOMASI -->
+        <div class="ios-debt-alert" id="panelDebtAlert">
+            <p>⚠️ Qarzlar mavjud!</p>
         </div>
-        <div id="itemTotal" style="display:none;background:#111;border-radius:8px;padding:10px;font-size:12px"></div>
-      </div>
-    </div>
-    <div class="card" id="paySection" style="display:none;margin-bottom:12px">
-      <span class="lbl" style="margin-top:0">💳 TO'LOV</span>
-      <div id="payList" style="margin-bottom:10px"></div>
-      <div style="display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;margin-bottom:10px">
-        <select id="payMeth" style="width:auto">
-          <option value="naqd">💵 Naqd</option>
-          <option value="click">💳 Click</option>
-        </select>
-        <input type="number" id="payAmt" placeholder="Summa"/>
-        <button onclick="addPayment()" style="background:#f59e0b;color:#000;border:none;border-radius:8px;padding:10px 14px;font-weight:700;cursor:pointer">+</button>
-      </div>
-      <div id="payToggle" onclick="toggleDebt()" style="display:flex;align-items:center;gap:8px;padding:10px;background:#111;border-radius:8px;cursor:pointer;margin-bottom:10px;border:1px solid #2a2a2a">
-        <div id="debtCheck" style="width:18px;height:18px;border-radius:4px;background:#2a2a2a;border:1px solid #444;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0"></div>
-        <span style="font-size:13px;color:#888;font-weight:700" id="debtLbl">💸 Qarz sifatida saqlash</span>
-      </div>
-      <div id="paySummary" style="background:#111;border-radius:8px;padding:10px;font-size:12px;margin-bottom:10px"></div>
-      <div id="orderErr" style="display:none;background:#3f0000;color:#ff6b6b;padding:10px;border-radius:8px;font-size:12px;margin-bottom:10px"></div>
-      <button class="btn btn-green" id="saveBtn" onclick="saveOrder()">✓ Buyurtmani Saqlash</button>
-    </div>
-  </div>
-
-  <div class="page" id="page-orders">
-    <div class="filter-row">
-      <button class="fbtn active" onclick="filterOrders('all',this)">Barchasi</button>
-      <button class="fbtn" onclick="filterOrders('qarz',this)">💸 Qarz</button>
-      <button class="fbtn" onclick="filterOrders('qabul',this)">✅ Qabul</button>
-      <button class="fbtn" onclick="filterOrders('dizayn',this)">🎨 Dizayn</button>
-      <button class="fbtn" onclick="filterOrders('pechat',this)">🖨️ Pechat</button>
-      <button class="fbtn" onclick="filterOrders('chiqdi',this)">📦 Tayyor</button>
-    </div>
-    <div id="ordersList"></div>
-  </div>
-
-  <div class="page" id="page-arxiv">
-    <input id="arxivQ" placeholder="Qidirish (Ism, mavzu...)" oninput="renderArxiv()" style="margin-bottom:12px"/>
-    <div id="arxivList"></div>
-  </div>
-
-  <div class="page" id="page-search">
-    <div style="display:flex;gap:8px;margin-bottom:12px">
-      <input id="searchQ" placeholder="Mijoz, mavzu, o'lcham (300x500)..." style="flex:1"/>
-      <button onclick="doSearch()" style="background:#f59e0b;color:#000;border:none;border-radius:8px;padding:10px 16px;font-weight:700;cursor:pointer">🔍 Izla</button>
-    </div>
-    <div id="searchList"></div>
-  </div>
-
-  <div class="page" id="page-debts">
-    <div id="debtStats" class="grid2" style="margin-bottom:14px"></div>
-    <div id="debtsList"></div>
-  </div>
-
-  <div class="page" id="page-kassa">
-    <div class="filter-row">
-      <button class="fbtn active" onclick="filterKassa('all',this)">Barchasi</button>
-      <button class="fbtn" onclick="filterKassa('today',this)">Bugun</button>
-      <button class="fbtn" onclick="filterKassa('week',this)">Hafta</button>
-      <button class="fbtn" onclick="filterKassa('month',this)">Bu oy</button>
-    </div>
-    <div id="kassaStats" class="grid3" style="margin-bottom:14px"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
-      <button class="btn btn-green" onclick="openIncModal()">📥 Kirim qo'shish</button>
-      <button class="btn btn-red" onclick="openExpModal()">📤 Chiqim qo'shish</button>
-    </div>
-    <div id="kassaList"></div>
-  </div>
-
-  <div class="page" id="page-m2">
-    <div style="display:flex;gap:8px;margin-bottom:14px">
-      <select id="m2Year" onchange="renderM2()" style="flex:1"></select>
-      <select id="m2Month" onchange="renderM2()" style="flex:1"></select>
-    </div>
-    <div id="m2Content"></div>
-  </div>
-
-  <div class="page" id="page-workers">
-    <div class="card" style="border-color:#a855f7;margin-bottom:16px">
-      <div style="font-size:14px;font-weight:700;color:#a855f7;margin-bottom:12px">➕ Yangi Ishchi Qo'shish</div>
-      <div class="grid2" style="margin-bottom:10px">
-        <input id="newWName" placeholder="Ism"/>
-        <input id="newWPass" placeholder="Parol"/>
-      </div>
-      <div id="workerMsg" style="font-size:12px;margin-bottom:8px;display:none"></div>
-      <button class="btn btn-blue" onclick="addWorker()">Qo'shish</button>
-    </div>
-    <div id="workersList"></div>
-  </div>
-</div>
-
-<div class="modal" id="chekModal">
-  <div class="modal-box">
-    <div id="chekContent" style="background:#fff;border-radius:10px;padding:16px;color:#000;font-family:monospace;font-size:12px;margin-bottom:14px"></div>
-    <button class="btn btn-green" onclick="printChek()">🖨️ Chop etish / Ulashish</button>
-    <button class="btn btn-gray" style="margin-top:8px" onclick="closeModal('chekModal')">Yopish</button>
-  </div>
-</div>
-
-<div class="modal" id="orderModal">
-  <div class="modal-box">
-    <div id="orderDetail"></div>
-    <div id="orderActions" style="margin-top:12px"></div>
-  </div>
-</div>
-
-<div class="modal" id="incModal">
-  <div class="modal-box">
-    <div style="font-size:15px;font-weight:700;color:#10b981;margin-bottom:14px">📥 Kirim Qo'shish</div>
-    <input type="number" id="incAmt" placeholder="Summa (so'm)" style="margin-bottom:10px"/>
-    <input id="incNote" placeholder="Izoh (Kirim sababi)" style="margin-bottom:14px"/>
-    <div class="grid2"><button class="btn btn-gray" onclick="closeModal('incModal')">Bekor</button><button class="btn btn-green" onclick="saveIncome()">Saqlash</button></div>
-  </div>
-</div>
-
-<div class="modal" id="expModal">
-  <div class="modal-box">
-    <div style="font-size:15px;font-weight:700;color:#ef4444;margin-bottom:14px">📤 Chiqim Qo'shish</div>
-    <input type="number" id="expAmt" placeholder="Summa (so'm)" style="margin-bottom:10px"/>
-    <select id="expCat" style="margin-bottom:10px">
-      <option>Material xarid</option><option>Ijara</option><option>Maosh</option><option>Kommunal</option><option>Boshqa</option>
-    </select>
-    <input id="expNote" placeholder="Batafsil izoh" style="margin-bottom:14px"/>
-    <div class="grid2"><button class="btn btn-gray" onclick="closeModal('expModal')">Bekor</button><button class="btn btn-red" onclick="saveExpense()">Saqlash</button></div>
-  </div>
-</div>
-
-<div class="modal" id="debtPayModal">
-  <div class="modal-box">
-    <div style="font-size:15px;font-weight:700;color:#f97316;margin-bottom:14px">💰 Qarz To'lovini Qabul Qilish</div>
-    <div id="debtPayInfo" style="background:#111;border-radius:8px;padding:10px;margin-bottom:12px;font-size:12px"></div>
-    <input type="number" id="debtPayAmt" placeholder="To'lov summasi" style="margin-bottom:14px"/>
-    <div class="grid2"><button class="btn btn-gray" onclick="closeModal('debtPayModal')">Bekor</button><button class="btn btn-yellow" onclick="saveDebtPay()">To'lovni Saqlash</button></div>
-  </div>
-</div>
-
-<script>
-// Telegram Web App tashqi ko'rinishini sozlash
-const tg = window.Telegram?.WebApp;
-if (tg) {
-  tg.expand(); // Ilovani telefon ekraniga to'liq yoyish
-  tg.ready();
-}
-
-const SUPABASE_URL = 'https://gsddtlnpuwqjyadovshp.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_ZxsMtYclbSrGigXep40XYQ_g0OJG9rE';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-const ADMIN_PASS = 'ziyo';
-const MATS = { banner:'Banner', arakal:'Arakal', setka:'Setka' };
-const MATCOLORS = { banner:'#f59e0b', arakal:'#2563eb', setka:'#10b981' };
-const MONTHS = ['Yanvar','Fevral','Mart','Aprel','May','Iyun','Iyul','Avgust','Sentabr','Oktabr','Noyabr','Dekabr'];
-const ROLLS = { banner:[110,130,160,210,320], arakal:[100,120,150], setka:[100,120,150] };
-const STATUS = {
-  qarz:{l:'💸 Qarz',c:'#f97316'}, qabul:{l:'✅ Qabul',c:'#2563eb'}, dizayn:{l:'🎨 Dizayn',c:'#d97706'},
-  pechat:{l:'🖨️ Pechat',c:'#f59e0b'}, chiqdi:{l:'📦 Tayyor',c:'#8b5cf6'}, bekor:{l:'❌ Bekor',c:'#6b7280'}, arxiv:{l:'✅ Olib ketildi',c:'#10b981'}
-};
-
-let state = { user:null, isAdmin:false, orders:[], prices:{banner:45000,arakal:75000,setka:85000}, workers:[], items:[], payments:[], isDebt:false, kassaFilter:'all', ordersFilter:'all', currentDebtId:null };
-const fp = n => Math.round(n||0).toLocaleString('uz-UZ') + " so'm";
-const gid = p => p+'-'+Date.now().toString(36).toUpperCase();
-const nowStr = () => new Date().toLocaleString('uz-UZ');
-
-async function init() {
-  const saved = localStorage.getItem('rs_user');
-  if (saved) {
-    const u = JSON.parse(saved);
-    state.user = u.name;
-    state.isAdmin = u.isAdmin || false;
-  }
-  await loadData();
-  document.getElementById('loading').style.display = 'none';
-  if (state.user) showApp(); else showLogin();
-}
-
-async function loadData() {
-  try {
-    const [ordRes, prRes, wrRes] = await Promise.all([
-      sb.from('orders').select('data').order('timestamp', { ascending:false }),
-      sb.from('prices').select('*'),
-      sb.from('workers').select('*'),
-    ]);
-    state.orders = (ordRes.data||[]).map(r=>r.data);
-    if (prRes.data) prRes.data.forEach(r=>{ state.prices[r.material]=r.price; });
-    state.workers = wrRes.data||[];
-  } catch(e) { console.error("Xato:", e); }
-}
-
-function showLogin() {
-  document.getElementById('loginPage').style.display = 'flex';
-  document.getElementById('mainApp').style.display = 'none';
-  renderWorkerButtons();
-}
-
-function renderWorkerButtons() {
-  document.getElementById('workerButtons').innerHTML = state.workers.map(w =>
-    `<button onclick="selectWorker('${w.name}')" style="background:#111;border:1px solid #2a2a2a;color:#aaa;border-radius:8px;padding:12px;font-weight:700;cursor:pointer" id="wb_${w.name}">${w.name}</button>`
-  ).join('');
-}
-
-let selectedWorker = null;
-function selectWorker(name) {
-  selectedWorker = name;
-  document.querySelectorAll('[id^=wb_]').forEach(b=>{ b.style.background='#111'; b.style.color='#aaa'; });
-  document.getElementById('wb_'+name).style.background='#f59e0b';
-  document.getElementById('wb_'+name).style.color='#000';
-  document.getElementById('passSection').style.display = 'block';
-  document.getElementById('passInput').focus();
-}
-
-function doLogin() {
-  const pass = document.getElementById('passInput').value;
-  const worker = state.workers.find(w=>w.name===selectedWorker);
-  if (!worker || worker.password !== pass) { alert('❌ Parol noto\'g\'ri!'); return; }
-  state.user = worker.name; state.isAdmin = false;
-  localStorage.setItem('rs_user', JSON.stringify({name:worker.name, isAdmin:false}));
-  showApp();
-}
-
-function doAdminLogin() {
-  const pass = document.getElementById('adminPassInput').value;
-  if (pass !== ADMIN_PASS) { alert('❌ Parol noto\'g\'ri!'); return; }
-  state.user = 'Admin (Ziyo)'; state.isAdmin = true;
-  localStorage.setItem('rs_user', JSON.stringify({name:'Admin (Ziyo)', isAdmin:true}));
-  showApp();
-}
-
-function doLogout() {
-  state.user=null; state.isAdmin=false;
-  localStorage.removeItem('rs_user');
-  showLogin();
-}
-
-function showApp() {
-  document.getElementById('loginPage').style.display = 'none';
-  document.getElementById('mainApp').style.display = 'block';
-  document.getElementById('currentUser').textContent = state.user + (state.isAdmin?' (Admin)':'');
-  buildTabs();
-  initM2Selects();
-  if (state.isAdmin) { renderOrders(); renderArxiv(); renderDebts(); renderKassa(); renderM2(); renderWorkersList(); }
-  else { renderPriceInputs(); onMatChange(); }
-}
-
-function buildTabs() {
-  const tabs = state.isAdmin
-    ? [['orders','📋 Buyurtmalar'],['arxiv','📦 Arxiv'],['search','🔍 Izla'],['debts','💸 Qarzlar'],['kassa','💰 Kassa'],['m2','📐 m²'],['workers','👷 Ishchilar']]
-    : [['neworder','📝 Buyurtma']];
-  document.getElementById('mainTabs').innerHTML = tabs.map(([id,lbl],i) =>
-    `<div class="tab${i===0?' active':''}" onclick="showPage('${id}',this)">${lbl}</div>`
-  ).join('');
-  showPage(tabs[0][0], document.querySelector('.tab'));
-}
-
-function showPage(id, el) {
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  document.getElementById('page-'+id)?.classList.add('active');
-  el?.classList.add('active');
-}
-
-function renderPriceInputs() {
-  document.getElementById('priceInputs').innerHTML = ['banner','arakal','setka'].map(k=>`
-    <div><div style="font-size:11px;color:#888;margin-bottom:4px">${MATS[k]}</div>
-    <input type="number" id="pr_${k}" value="${state.prices[k]||''}" style="color:${MATCOLORS[k]};font-weight:700"/></div>
-  `).join('');
-}
-
-async function savePrices() {
-  for (const k of ['banner','arakal','setka']) {
-    const val = parseInt(document.getElementById('pr_'+k)?.value)||0;
-    if (val > 0) {
-      state.prices[k] = val;
-      await sb.from('prices').upsert({ material:k, price:val });
-    }
-  }
-  alert('✅ Narxlar yangilandi!');
-}
-
-function onMatChange() {
-  const mat = document.getElementById('matSel').value;
-  const price = state.prices[mat] || 0;
-  let html = '';
-  if (mat === 'harf3d') {
-    html = `<input type="number" id="h3p" placeholder="Kelishilgan narx (so'm)" style="margin-bottom:8px"/>
-            <textarea id="h3d" placeholder="Tavsif (3D Harf o'lchami, rang...)" style="min-height:60px"></textarea>`;
-  } else {
-    html = `<div style="font-size:12px;color:#d97706;margin-bottom:8px">1 m² = <b style="color:${MATCOLORS[mat]}">${fp(price)}</b></div>
-            <div class="grid2" style="margin-bottom:8px">
-              <input type="number" id="matW" placeholder="Kenglik (sm)"/>
-              <input type="number" id="matL" placeholder="Uzunlik (sm)"/>
+        
+        <div class="section-title">Material Narxlari (1 m²)</div>
+        <div class="ios-form-group">
+            <div class="ios-input-row">
+                <label>Banner</label>
+                <input type="number" id="price-banner" placeholder="30000">
             </div>
-            <input type="number" id="matQ" value="1" min="1"/>`;
-  }
-  document.getElementById('matForm').innerHTML = html;
-}
+            <div class="ios-input-row">
+                <label>Arakal</label>
+                <input type="number" id="price-arakal" placeholder="35000">
+            </div>
+            <div class="ios-input-row">
+                <label>Setka</label>
+                <input type="number" id="price-setka" placeholder="40000">
+            </div>
+        </div>
+        <button class="ios-btn-primary" id="savePricesBtn" style="padding:12px; font-size:15px; margin-bottom:10px;">Narxlarni Saqlash</button>
 
-function addItem() {
-  const mat = document.getElementById('matSel').value;
-  if (mat === 'harf3d') {
-    const price = parseInt(document.getElementById('h3p')?.value)||0;
-    const desc = document.getElementById('h3d')?.value||'';
-    if (!price || !desc) { alert('Narx va tavsif kiriting!'); return; }
-    state.items.push({ id:Date.now(), material:'3D Harf', custWidth:0, custLength:0, billedAreaM2:0, qty:1, total:price, harf3dDesc:desc });
-  } else {
-    const w = parseFloat(document.getElementById('matW')?.value)||0;
-    const l = parseFloat(document.getElementById('matL')?.value)||0;
-    const q = parseInt(document.getElementById('matQ')?.value)||1;
-    if (!w||!l) { alert("O'lchamlarni kiriting!"); return; }
-    let bW = ROLLS[mat].find(r=>r>=w);
-    if (!bW) { alert(`Xato! Eng katta o'lcham: ${ROLLS[mat][ROLLS[mat].length-1]} sm`); return; }
-    const area = (bW*l)/10000;
-    state.items.push({ id:Date.now(), material:MATS[mat], custWidth:w, custLength:l, billedWidth:bW, billedAreaM2:area, qty:q, total:area*state.prices[mat]*q, pricePerM2:state.prices[mat] });
-  }
-  renderItems();
-  onMatChange();
-}
-
-function renderItems() {
-  const total = state.items.reduce((s,i)=>s+i.total,0);
-  document.getElementById('itemCount').textContent = state.items.length;
-  const el = document.getElementById('itemsList');
-  if (!state.items.length) { el.innerHTML='<div class="empty">📋 Bo\'sh</div>'; document.getElementById('itemTotal').style.display='none'; document.getElementById('paySection').style.display='none'; return; }
-  el.innerHTML = state.items.map(it=>`
-    <div style="background:#111;border-radius:8px;padding:10px;margin-bottom:6px;display:flex;justify-content:space-between">
-      <div><div style="font-size:12px;font-weight:700;color:#f59e0b">${it.material}</div>
-      ${it.billedAreaM2>0?`<div style="font-size:11px;color:#888">${it.custWidth}×${it.custLength}sm | ${it.billedAreaM2.toFixed(2)}m²</div>`:''}
-      <div style="font-size:13px;font-weight:700;color:#10b981;margin-top:2px">${fp(it.total)}</div></div>
-      <button onclick="removeItem(${it.id})" style="background:none;border:none;color:#ef4444;font-size:18px;cursor:pointer">×</button>
+        <div class="section-title">Yangi Qarz Qo'shish</div>
+        <div class="ios-form-group">
+            <div class="ios-input-row">
+                <label>Mijoz ismi</label>
+                <input type="text" id="debt-client" placeholder="Ism familiya">
+            </div>
+            <div class="ios-input-row">
+                <label>Qarz summasi</label>
+                <input type="number" id="debt-amount" placeholder="0">
+            </div>
+        </div>
+        <button class="ios-btn-primary" id="saveDebtBtn" style="padding:12px; font-size:15px; background:#FF3B30;">Qarzni Yuklash</button>
     </div>
-  `).join('');
-  document.getElementById('itemTotal').style.display='block';
-  document.getElementById('itemTotal').innerHTML=`<div style="display:flex;justify-content:space-between"><span>Jami:</span><b style="color:#10b981">${fp(total)}</b></div>`;
-  document.getElementById('paySection').style.display='block';
-  renderPaySummary();
-}
 
-function removeItem(id) { state.items=state.items.filter(i=>i.id!==id); renderItems(); }
-
-function addPayment() {
-  const amt = parseInt(document.getElementById('payAmt').value)||0;
-  if (amt<=0) return;
-  state.payments.push({ method:document.getElementById('payMeth').value, amount:amt });
-  document.getElementById('payAmt').value='';
-  renderPaySummary();
-}
-
-function toggleDebt() {
-  state.isDebt = !state.isDebt;
-  document.getElementById('debtCheck').textContent = state.isDebt?'✓':'';
-  document.getElementById('debtCheck').style.background = state.isDebt?'#f97316':'#2a2a2a';
-  renderPaySummary();
-}
-
-function renderPaySummary() {
-  const total = state.items.reduce((s,i)=>s+i.total,0);
-  const paid = state.payments.reduce((s,p)=>s+p.amount,0);
-  const debt = state.isDebt||paid<total ? Math.max(0,total-paid) : 0;
-  document.getElementById('payList').innerHTML = state.payments.map((p,i)=>`
-    <div style="display:flex;justify-content:space-between;background:#111;padding:6px;margin-bottom:4px;border-radius:6px;font-size:12px">
-      <span>${p.method==='naqd'?'💵 Naqd':'💳 Click'}</span><b>${fp(p.amount)}</b>
-      <span onclick="removePay(${i})" style="color:#ef4444;cursor:pointer">×</span>
+    <!-- Asosiy Interfeys -->
+    <div class="ios-header">
+        <h1>Buyurtma</h1>
+        <button class="settings-btn" id="openPanel">⚙️</button>
     </div>
-  `).join('');
-  document.getElementById('paySummary').innerHTML=`
-    <div style="display:flex;justify-content:space-between"><span>To'langan:</span><b style="color:#10b981">${fp(paid)}</b></div>
-    ${debt>0?`<div style="display:flex;justify-content:space-between;margin-top:4px"><span>Qarz:</span><b style="color:#f97316">${fp(debt)}</b></div>`:''}
-  `;
-}
 
-function removePay(i) { state.payments.splice(i,1); renderPaySummary(); }
-
-async function saveOrder() {
-  const name=document.getElementById('cName').value.trim();
-  const phone=document.getElementById('cPhone').value.trim();
-  const topic=document.getElementById('cTopic').value.trim();
-  if(!name||!phone||!topic||!state.items.length){ alert('⚠️ Iltimos barcha ma\'lumotlarni to\'liq to\'ldiring!'); return; }
-
-  const saveBtn = document.getElementById('saveBtn');
-  saveBtn.disabled = true; saveBtn.textContent = 'Saqlanmoqda...';
-
-  const total=state.items.reduce((s,i)=>s+i.total,0);
-  const paid=state.payments.reduce((s,p)=>s+p.amount,0);
-  const debt=state.isDebt||paid<total?Math.max(0,total-paid):0;
-  
-  const order={
-    id:gid('ORD'), date:nowStr(), timestamp:Date.now(), worker:state.user,
-    client:{ name, phone, type:document.getElementById('cType').value, org:document.getElementById('cExtra').value, topic },
-    items:state.items, totalPrice:total, paidAmount:debt>0?paid:total, debtAmount:debt,
-    payments:[...state.payments], status:debt>0?'qarz':'qabul'
-  };
-
-  try {
-    const { error } = await sb.from('orders').insert({ id:order.id, data:order, worker_name:state.user, status:order.status, timestamp:order.timestamp });
-    if (error) throw error;
-    state.orders.unshift(order);
-    alert('✅ Buyurtma muvaffaqiyatli saqlandi!');
-    // Ilovani tozalash
-    document.getElementById('cName').value=''; document.getElementById('cPhone').value=''; document.getElementById('cTopic').value='';
-    state.items=[]; state.payments=[]; state.isDebt=false; renderItems();
-    showChek(order);
-  } catch(e) { alert('❌ Internet aloqasini tekshiring!'); }
-  finally { saveBtn.disabled = false; saveBtn.textContent = '✓ Buyurtmani Saqlash'; }
-}
-
-function showChek(order) {
-  document.getElementById('chekContent').innerHTML=`
-    <div style="text-align:center;font-weight:bold;margin-bottom:10px;font-size:14px">📣 ZIYOdizayn</div>
-    <div><b>ID:</b> ${order.id}</div>
-    <div><b>Mijoz:</b> ${order.client.name}</div>
-    <div><b>Mavzu:</b> ${order.client.topic}</div>
-    <hr style="margin:6px 0;border-top:1px dashed #000"/>
-    ${order.items.map(it=>`<div>• ${it.material} ${it.custWidth?'('+it.custWidth+'x'+it.custLength+'sm)':''} = ${fp(it.total)}</div>`).join('')}
-    <hr style="margin:6px 0;border-top:1px dashed #000"/>
-    <div><b>Jami:</b> ${fp(order.totalPrice)}</div>
-    <div><b>To'landi:</b> ${fp(order.paidAmount)}</div>
-    ${order.debtAmount>0?`<div style="color:red"><b>Qarz:</b> ${fp(order.debtAmount)}</div>`:''}
-    <div style="text-align:center;margin-top:10px;font-size:10px">Rahmat! Sifati kafolatlangan!</div>
-  `;
-  document.getElementById('chekModal').classList.add('open');
-}
-
-function printChek() { window.print(); }
-
-function renderOrders() {
-  const active = state.orders.filter(o=>o.status!=='bekor'&&o.status!=='arxiv');
-  const filtered = state.ordersFilter==='all'?active:active.filter(o=>o.status===state.ordersFilter);
-  document.getElementById('ordersList').innerHTML = filtered.map(o=>`
-    <div class="card" onclick="showOrderDetail('${o.id}')" style="cursor:pointer">
-      <div style="display:flex;justify-content:between">
-        <div><b>${o.client.name}</b><div style="font-size:11px;color:#f59e0b">${o.client.topic}</div></div>
-        <div style="text-align:right"><span class="badge" style="background:#222;color:#f59e0b">${STATUS[o.status]?.l||o.status}</span></div>
-      </div>
-      <div style="font-size:12px;margin-top:6px;color:#ccc">Jami: ${fp(o.totalPrice)} | Qarz: <span style="color:#f97316">${fp(o.debtAmount)}</span></div>
+    <!-- ASOSIY EKRANDAGI BILDIRISHNOMA -->
+    <div class="ios-debt-alert" id="mainDebtAlert">
+        <p id="mainDebtText">⚠️ Diqqat: Tizimda to'lanmagan qarzlar bor!</p>
     </div>
-  `).join('');
-}
 
-function filterOrders(f,btn){
-  state.ordersFilter=f;
-  document.querySelectorAll('#page-orders .fbtn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active'); renderOrders();
-}
-
-function showOrderDetail(id){
-  const o=state.orders.find(x=>x.id===id); if(!o)return;
-  document.getElementById('orderDetail').innerHTML=`
-    <h3>${o.client.name}</h3><p>${o.client.phone}</p><p>Mavzu: ${o.client.topic}</p>
-    <div style="background:#111;padding:8px;border-radius:6px;margin:8px 0">
-      ${o.items.map(i=>`<div>• ${i.material} = ${fp(i.total)}</div>`).join('')}
+    <!-- Statistika Vidjetlari -->
+    <div class="stats-container">
+        <div class="stat-card">
+            <div class="title">Banner</div>
+            <div class="value" id="stat-banner">0.00 m²</div>
+        </div>
+        <div class="stat-card">
+            <div class="title">Arakal</div>
+            <div class="value" id="stat-arakal">0.00 m²</div>
+        </div>
+        <div class="stat-card">
+            <div class="title">Setka</div>
+            <div class="value" id="stat-setka">0.00 m²</div>
+        </div>
     </div>
-    <b>Jami: ${fp(o.totalPrice)} | Qarz: ${fp(o.debtAmount)}</b>
-  `;
-  let acts = `<button class="btn btn-gray" onclick="closeModal('orderModal')">Yopish</button>`;
-  if(o.status!=='arxiv' && o.status!=='bekor') {
-    acts += `<button class="btn btn-yellow" style="margin-top:6px" onclick="openDebtPay('${o.id}');closeModal('orderModal')">💰 Qarz to'lovi</button>`;
-    acts += `<button class="btn btn-green" style="margin-top:6px" onclick="markPickup('${o.id}');closeModal('orderModal')">📦 Olib ketildi (Arxiv)</button>`;
-  }
-  document.getElementById('orderActions').innerHTML = acts;
-  document.getElementById('orderModal').classList.add('open');
-}
 
-function openDebtPay(id){
-  const o=state.orders.find(x=>x.id===id); if(!o)return;
-  state.currentDebtId=id;
-  document.getElementById('debtPayInfo').innerHTML=`Mijoz: <b>${o.client.name}</b><br>Qarz summasi: <b style="color:red">${fp(o.debtAmount)}</b>`;
-  document.getElementById('debtPayModal').classList.add('open');
-}
-
-async function saveDebtPay(){
-  const amount=parseInt(document.getElementById('debtPayAmt').value)||0;
-  if(!amount)return;
-  const o=state.orders.find(x=>x.id===state.currentDebtId); if(!o)return;
-  o.debtAmount = Math.max(0, o.debtAmount - amount);
-  o.paidAmount += amount;
-  if(o.debtAmount===0) o.status='qabul';
-
-  await sb.from('orders').update({status:o.status, data:o}).eq('id',o.id);
-  closeModal('debtPayModal'); renderDebts(); renderOrders(); renderKassa();
-  alert('💰 Qarz to\'lovi qabul qilindi va Kassaga qo\'shildi!');
-}
-
-async function markPickup(id){
-  const o=state.orders.find(x=>x.id===id); if(!o)return;
-  o.status='arxiv'; o.pickedUpAt=nowStr();
-  await sb.from('orders').update({status:'arxiv', data:o}).eq('id',id);
-  renderOrders(); renderArxiv();
-}
-
-function renderDebts(){
-  const debts=state.orders.filter(o=>(o.debtAmount||0)>0&&o.status!=='bekor'&&o.status!=='arxiv');
-  const total=debts.reduce((s,o)=>s+o.debtAmount,0);
-  document.getElementById('debtStats').innerHTML=`
-    <div class="stat"><div class="stat-v">${debts.length} ta</div><div class="stat-l">Qarzlar</div></div>
-    <div class="stat"><div class="stat-v" style="color:red">${fp(total)}</div><div class="stat-l">Jami qarz</div></div>
-  `;
-  document.getElementById('debtsList').innerHTML=debts.map(o=>`
-    <div class="card" style="display:flex;justify-content:space-between">
-      <div><b>${o.client.name}</b><br><small>${o.client.topic}</small></div>
-      <button onclick="openDebtPay('${o.id}')" style="background:#f97316;color:#fff;border:none;padding:6px 12px;border-radius:6px;font-weight:bold">${fp(o.debtAmount)}</button>
+    <!-- Material Tanlash -->
+    <div class="segmented-control">
+        <button class="segment-item active" data-material="banner">Banner</button>
+        <button class="segment-item" data-material="arakal">Arakal</button>
+        <button class="segment-item" data-material="setka">Setka</button>
     </div>
-  `).join('');
-}
 
-function filterKassa(f,btn){
-  state.kassaFilter=f;
-  document.querySelectorAll('#page-kassa .fbtn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active'); renderKassa();
-}
-
-async function renderKassa(){
-  const [expRes, incRes] = await Promise.all([sb.from('expenses').select('data'), sb.from('incomes').select('data')]);
-  const expenses=(expRes.data||[]).map(r=>r.data);
-  const incomes=(incRes.data||[]).map(r=>r.data);
-  
-  const fOrd=state.orders.filter(o=>o.status!=='bekor');
-  const kirim=fOrd.reduce((s,o)=>s+o.paidAmount,0)+incomes.reduce((s,i)=>s+i.amount,0);
-  const chiqim=expenses.reduce((s,e)=>s+e.amount,0);
-
-  document.getElementById('kassaStats').innerHTML=`
-    <div class="stat" style="color:#10b981"><h4>📥 Kirim</h4><b>${fp(kirim)}</b></div>
-    <div class="stat" style="color:#ef4444"><h4>📤 Chiqim</h4><b>${fp(chiqim)}</b></div>
-    <div class="stat" style="color:#f59e0b"><h4>💼 Sof Qoldi</h4><b>${fp(kirim-chiqim)}</b></div>
-  `;
-  
-  const all=[
-    ...fOrd.map(o=>({date:o.date,label:'🧾 '+o.client.name,amt:o.paidAmount,c:'#10b981',s:'+'})),
-    ...incomes.map(i=>({date:i.date,label:'📥 Kirim: '+i.note,amt:i.amount,c:'#10b981',s:'+'})),
-    ...expenses.map(e=>({date:e.date,label:'📤 Chiqim: '+e.category,amt:e.amount,c:'#ef4444',s:'-'}))
-  ];
-  document.getElementById('kassaList').innerHTML=all.map(x=>`
-    <div style="display:flex;justify-content:space-between;padding:6px;border-bottom:1px solid #2a2a2a;font-size:13px">
-      <div>${x.label}<br><small style="color:#555">${x.date}</small></div><b style="color:${x.c}">${x.s}${fp(x.amt)}</b>
+    <!-- O'lcham kiritish -->
+    <div class="ios-form-group">
+        <div class="ios-input-row">
+            <label>Mijoz ismi</label>
+            <input type="text" id="input-client" placeholder="Mijoz nomi">
+        </div>
+        <div class="ios-input-row">
+            <label>Eni (sm)</label>
+            <input type="number" id="input-eni" placeholder="0" inputmode="numeric">
+        </div>
+        <div class="ios-input-row">
+            <label>Boyi (sm)</label>
+            <input type="number" id="input-boyi" placeholder="0" inputmode="numeric">
+        </div>
+        <div class="ios-input-row">
+            <label>Holati</label>
+            <select id="input-status">
+                <option value="To'landi">To'landi</option>
+                <option value="Qarz">Qarz yozish</option>
+            </select>
+        </div>
     </div>
-  `).join('');
-}
 
-function openIncModal(){ document.getElementById('incModal').classList.add('open'); }
-function openExpModal(){ document.getElementById('expModal').classList.add('open'); }
+    <div class="quick-result-box" id="quickResult">
+        <p>O'lchamlarni kiriting...</p>
+    </div>
 
-async function saveIncome(){
-  const amount=parseInt(document.getElementById('incAmt').value)||0;
-  const note=document.getElementById('incNote').value||'Kirim'; if(!amount)return;
-  const inc={id:gid('INC'),date:nowStr(),timestamp:Date.now(),amount,note};
-  await sb.from('incomes').insert({id:inc.id,data:inc,timestamp:inc.timestamp});
-  closeModal('incModal'); renderKassa();
-}
+    <button class="ios-btn-primary" id="submitOrderBtn">Buyurtmani Yuklash</button>
 
-async function saveExpense(){
-  const amount=parseInt(document.getElementById('expAmt').value)||0;
-  const category=document.getElementById('expCat').value;
-  const note=document.getElementById('expNote').value||category; if(!amount)return;
-  const exp={id:gid('EXP'),date:nowStr(),timestamp:Date.now(),amount,category,note};
-  await sb.from('expenses').insert({id:exp.id,data:exp,timestamp:exp.timestamp});
-  closeModal('expModal'); renderKassa();
-}
+    <script>
+        // --- TO'LIQ VA TO'G'RI SUPABASE SOZLAMALARI ---
+        const SUPABASE_URL = "https://gsddtlnpuwqjyadovshp.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_ZxsMtYclbSrGigXep40XYQ_g0OJG9rE";
+        
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-function initM2Selects(){
-  const nd=new Date();
-  document.getElementById('m2Year').innerHTML=`<option value="2026">2026</option>`;
-  document.getElementById('m2Month').innerHTML=MONTHS.map((m,i)=>`<option value="${i}" ${i===nd.getMonth()?'selected':''}>${m}</option>`).join('');
-}
+        let dbPrices = { banner: 30000, arakal: 35000, setka: 40000 };
+        let activeMaterial = "banner";
 
-function renderM2(){
-  const month=parseInt(document.getElementById('m2Month').value);
-  const mOrds=state.orders.filter(o=>{const d=new Date(o.timestamp); return d.getMonth()===month&&o.status!=='bekor';});
-  let totalM2=0;
-  mOrds.forEach(o=>o.items.forEach(i=>{ if(i.billedAreaM2) totalM2 += i.billedAreaM2*i.qty; }));
-  document.getElementById('m2Content').innerHTML=`
-    <div class="card" style="text-align:center"><small>Ushbu oydagi jami hajm</small><h2>${totalM2.toFixed(2)} m²</h2></div>
-  `;
-}
+        // DOM Elementlari
+        const panel = document.getElementById('settingsPanel');
+        const overlay = document.getElementById('overlay');
+        const eniInput = document.getElementById('input-eni');
+        const boyiInput = document.getElementById('input-boyi');
+        const clientInput = document.getElementById('input-client');
+        const statusSelect = document.getElementById('input-status');
+        const quickResult = document.getElementById('quickResult');
 
-function doSearch(){
-  const q=document.getElementById('searchQ').value.toLowerCase();
-  const res=state.orders.filter(o=>o.client.name.toLowerCase().includes(q) || o.client.topic.toLowerCase().includes(q));
-  document.getElementById('searchList').innerHTML=res.map(o=>`<div class="card" onclick="showOrderDetail('${o.id}')"><b>${o.client.name}</b> - ${o.client.topic}</div>`).join('');
-}
+        // Navigatsiya ochish va yopish
+        function openSettings() {
+            panel.classList.add('open');
+            overlay.classList.add('show');
+            checkDebts(); // Admin panel ochilganda qarzlarni qayta tekshirish
+        }
 
-function renderArxiv(){
-  const arr=state.orders.filter(o=>o.status==='arxiv');
-  document.getElementById('arxivList').innerHTML=arr.map(o=>`<div class="card"><b>${o.client.name}</b><br><small>Olib ketildi: ${o.pickedUpAt}</small></div>`).join('');
-}
+        function closeSettings() {
+            panel.classList.remove('open');
+            overlay.classList.remove('show');
+        }
 
-function renderWorkersList(){
-  document.getElementById('workersList').innerHTML=state.workers.map(w=>`<div><b>${w.name}</b></div>`).join('');
-}
+        document.getElementById('openPanel').addEventListener('click', openSettings);
+        document.getElementById('closePanel').addEventListener('click', closeSettings);
+        overlay.addEventListener('click', closeSettings);
 
-async function addWorker(){
-  const name=document.getElementById('newWName').value; const pass=document.getElementById('newWPass').value;
-  await sb.from('workers').insert({name,password:pass}); alert('Ishchi qo\'shildi!'); loadData();
-}
+        // Telefonda mobil surish (Swipe Gesture)
+        let touchStartX = 0;
+        document.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; });
+        document.addEventListener('touchend', e => {
+            let touchEndX = e.changedTouches[0].screenX;
+            if (touchStartX < 50 && (touchEndX - touchStartX) > 80) { openSettings(); }
+        });
 
-function closeModal(id){ document.getElementById(id).classList.remove('open'); }
-function toggleClientType(){ document.getElementById('cExtraLbl').textContent=document.getElementById('cType').value==='davlat'?'Idora':'Soha'; }
+        // Segmented Control material almashtirish
+        document.querySelectorAll('.segment-item').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.segment-item').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                activeMaterial = this.getAttribute('data-material');
+                calculateQuick();
+            });
+        });
 
-init();
-</script>
+        // Sof m² va tezkor hisob
+        function calculateQuick() {
+            const eni = parseFloat(eniInput.value) || 0;
+            const boy = parseFloat(boyiInput.value) || 0;
+
+            if (eni > 0 && boy > 0) {
+                const sqm = (eni * boy) / 10000;
+                const currentPrice = dbPrices[activeMaterial] || 0;
+                const totalCost = sqm * currentPrice;
+                quickResult.innerHTML = `<p>📐 <b>${sqm.toFixed(2)} m²</b> | 💰 <b>${Math.round(totalCost).toLocaleString()} so'm</b></p>`;
+            } else {
+                quickResult.innerHTML = `<p>O'lchamlarni kiriting...</p>`;
+            }
+        }
+
+        eniInput.addEventListener('input', calculateQuick);
+        boyiInput.addEventListener('input', calculateQuick);
+
+        // QARZLARNI TEKSHIRISH VA BILDIRIShNOMA CHIQARISh MANTIQI
+        async function checkDebts() {
+            try {
+                let { data, error } = await supabase.from('debts').select('amount').eq('status', 'To\'lanmagan');
+                if (!error && data) {
+                    let totalDebtSum = data.reduce((sum, item) => sum + item.amount, 0);
+                    
+                    if (totalDebtSum > 0) {
+                        // Asosiy ekrandagi eslatma matni
+                        document.getElementById('mainDebtAlert').style.display = 'flex';
+                        document.getElementById('mainDebtText').innerText = `⚠️ Diqqat: Tizimda ${totalDebtSum.toLocaleString()} so'm faol qarz bor!`;
+                        
+                        // Admin paneldagi ichki bildirishnoma
+                        const panelAlert = document.getElementById('panelDebtAlert');
+                        panelAlert.style.display = 'flex';
+                        panelAlert.innerHTML = `<p>🔴 Jami faol qarz miqdori: <b>${totalDebtSum.toLocaleString()} so'm</b></p>`;
+                    } else {
+                        document.getElementById('mainDebtAlert').style.display = 'none';
+                        document.getElementById('panelDebtAlert').style.display = 'none';
+                    }
+                }
+            } catch (err) { console.log(err); }
+        }
+
+        // Narxlarni yuklash
+        async function fetchPrices() {
+            try {
+                let { data, error } = await supabase.from('material_prices').select('*');
+                if (!error && data && data.length > 0) {
+                    data.forEach(item => {
+                        dbPrices[item.material_name] = item.price;
+                        document.getElementById(`price-${item.material_name}`).value = item.price;
+                    });
+                    calculateQuick();
+                }
+            } catch (err) { console.log(err); }
+        }
+
+        // Narxlarni saqlash
+        document.getElementById('savePricesBtn').addEventListener('click', async () => {
+            const materials = ['banner', 'arakal', 'setka'];
+            for (const mat of materials) {
+                const inputVal = parseFloat(document.getElementById(`price-${mat}`).value);
+                if (inputVal > 0) {
+                    dbPrices[mat] = inputVal;
+                    await supabase.from('material_prices').upsert({ material_name: mat, price: inputVal }, { onConflict: 'material_name' });
+                }
+            }
+            alert("Narxlar muvaffaqiyatli saqlandi!");
+            closeSettings();
+            calculateQuick();
+        });
+
+        // Mustaqil qarz kiritish paneli buyrug'i
+        document.getElementById('saveDebtBtn').addEventListener('click', async () => {
+            const client = document.getElementById('debt-client').value.trim();
+            const amount = parseFloat(document.getElementById('debt-amount').value) || 0;
+
+            if (!client || amount <= 0) {
+                alert("Mijoz ismi va to'g'ri summani kiriting!");
+                return;
+            }
+
+            const { error } = await supabase.from('debts').insert([{ client_name: client, amount: amount }]);
+            if (!error) {
+                alert("Qarz muvaffaqiyatli yuklandi!");
+                document.getElementById('debt-client').value = '';
+                document.getElementById('debt-amount').value = '';
+                checkDebts();
+            }
+        });
+
+        // Jami m² hisobotini yangilash
+        async function updateStats() {
+            try {
+                let { data, error } = await supabase.from('orders').select('material, sqm');
+                if (!error && data) {
+                    let totals = { banner: 0, arakal: 0, setka: 0 };
+                    data.forEach(order => { if (totals[order.material] !== undefined) totals[order.material] += order.sqm; });
+                    document.getElementById('stat-banner').innerText = `${totals.banner.toFixed(2)} m²`;
+                    document.getElementById('stat-arakal').innerText = `${totals.arakal.toFixed(2)} m²`;
+                    document.getElementById('stat-setka').innerText = `${totals.setka.toFixed(2)} m²`;
+                }
+            } catch (err) { console.log(err); }
+        }
+
+        // Buyurtma yuklash va qarzni avtomat tekshirish mantiqi
+        document.getElementById('submitOrderBtn').addEventListener('click', async () => {
+            const eni = parseFloat(eniInput.value) || 0;
+            const boy = parseFloat(boyiInput.value) || 0;
+            const client = clientInput.value.trim() || "Noma'lum";
+            const status = statusSelect.value;
+
+            if (eni <= 0 || boy <= 0) {
+                alert("O'lchamlarni to'g'ri kiriting!");
+                return;
+            }
+
+            const sqm = (eni * boy) / 10000;
+            const currentPrice = dbPrices[activeMaterial] || 0;
+            const totalCost = sqm * currentPrice;
+
+            // 1. Buyurtmani bazaga yuklash
+            const { error: orderError } = await supabase.from('orders').insert([
+                { material: activeMaterial, width: eni, height: boy, sqm: sqm, total_price: Math.round(totalCost), client_name: client, status: status }
+            ]);
+
+            // 2. Agar holat "Qarz" qilib tanlangan bo'lsa, qarzlar jadvaliga ham avtomat yozish
+            if (status === "Qarz") {
+                await supabase.from('debts').insert([
+                    { client_name: client, amount: Math.round(totalCost), description: `${activeMaterial} uchun buyurtma` }
+                ]);
+            }
+
+            if (!orderError) {
+                alert("Ma'lumotlar yuklandi! 🎉");
+                eniInput.value = '';
+                boyiInput.value = '';
+                clientInput.value = '';
+                quickResult.innerHTML = `<p>O'lchamlarni kiriting...</p>`;
+                updateStats();
+                checkDebts();
+            } else {
+                alert("Xatolik: " + orderError.message);
+            }
+        });
+
+        // Dastlabki ishga tushirish buyruqlari
+        fetchPrices();
+        updateStats();
+        checkDebts();
+    </script>
 </body>
 </html>

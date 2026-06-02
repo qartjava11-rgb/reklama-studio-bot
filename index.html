@@ -3,75 +3,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Ziyo Dizayn ERP</title>
+    <title>Ziyo Dizayn Pro ERP</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { background-color: #F2F2F7; color: #1C1C1E; display: flex; flex-direction: column; min-height: 100vh; }
+        body { background-color: #F2F2F7; color: #1C1C1E; min-height: 100vh; }
         
-        /* Sahifalarni yashirish/ko'rsatish tizimi */
+        /* Sahifalar boshqaruvi */
         .page { display: none; padding: 16px; width: 100%; min-height: 100vh; }
         .page.active { display: block; }
 
-        /* Login Oynasi */
-        .login-container { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; padding: 20px; text-align: center; }
-        .login-box { background: #FFF; padding: 30px 20px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); width: 100%; max-width: 350px; }
-        .login-box h1 { margin-bottom: 20px; color: #007AFF; }
-        .login-input { width: 100%; padding: 14px; margin-bottom: 15px; border: 1px solid #E5E5EA; border-radius: 10px; font-size: 16px; background: #F2F2F7; outline: none; }
+        /* Elegant Login Oynasi */
+        .login-container { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; padding: 20px; }
+        .login-box { background: #FFF; padding: 30px 24px; border-radius: 20px; box-shadow: 0 8px 30px rgba(0,0,0,0.08); width: 100%; max-width: 360px; text-align: center; }
+        .login-box h1 { margin-bottom: 24px; color: #007AFF; font-weight: 800; font-size: 28px; }
+        .login-input { width: 100%; padding: 14px; margin-bottom: 16px; border: 1px solid #E5E5EA; border-radius: 12px; font-size: 16px; background: #F2F2F7; outline: none; transition: 0.2s; }
+        .login-input:focus { border-color: #007AFF; background: #FFF; }
 
-        /* Umumiy elementlar */
-        .ios-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-        .ios-header h1 { font-size: 26px; font-weight: 700; }
+        /* Global iOS stillari */
+        .ios-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .ios-header h1 { font-size: 28px; font-weight: 700; }
         .settings-btn { background: none; border: none; font-size: 26px; cursor: pointer; }
 
         .segmented-control { display: flex; background: #E5E5EA; border-radius: 9px; padding: 2px; margin-bottom: 20px; }
-        .segment-item { flex: 1; background: none; border: none; padding: 9px 0; font-size: 13px; font-weight: 600; color: #1C1C1E; cursor: pointer; border-radius: 7px; }
+        .segment-item { flex: 1; background: none; border: none; padding: 10px 0; font-size: 14px; font-weight: 600; color: #1C1C1E; cursor: pointer; border-radius: 7px; }
         .segment-item.active { background: #FFFFFF; box-shadow: 0 3px 8px rgba(0,0,0,0.12); }
 
         .ios-form-group { background: #FFFFFF; border-radius: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); margin-bottom: 20px; overflow: hidden; }
         .ios-input-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 0.5px solid #E5E5EA; }
         .ios-input-row:last-child { border-bottom: none; }
-        .ios-input-row label { font-size: 16px; font-weight: 500; }
-        .ios-input-row input, .ios-input-row select { border: none; outline: none; font-size: 16px; color: #007AFF; text-align: right; width: 55%; background: transparent; }
+        .ios-input-row label { font-size: 16px; font-weight: 500; color: #1C1C1E; }
+        .ios-input-row input, .ios-input-row select { border: none; outline: none; font-size: 16px; color: #007AFF; text-align: right; width: 60%; background: transparent; }
 
         .quick-result-box { background: #E4F2FF; border-radius: 14px; padding: 16px; text-align: center; margin-bottom: 20px; border: 1px solid #B4D7FF; }
-        .quick-result-box p { font-size: 15px; font-weight: 600; color: #007AFF; }
+        .quick-result-box p { font-size: 16px; font-weight: 600; color: #007AFF; }
 
-        .ios-btn-primary { background: #007AFF; color: #FFFFFF; border: none; border-radius: 14px; padding: 16px; font-size: 17px; font-weight: 600; width: 100%; cursor: pointer; }
+        .ios-btn-primary { background: #007AFF; color: #FFFFFF; border: none; border-radius: 14px; padding: 16px; font-size: 17px; font-weight: 600; width: 100%; cursor: pointer; transition: 0.1s; }
         .ios-btn-primary:active { background: #0063CC; }
 
-        /* Modal oyna (Settings) */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 100; display: none; justify-content: center; align-items: center; padding: 20px; }
+        /* Modallar oqimi */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 100; display: none; justify-content: center; align-items: center; padding: 16px; backdrop-filter: blur(4px); }
         .modal-overlay.show { display: flex; }
-        .modal-content { background: #F2F2F7; width: 100%; max-width: 400px; border-radius: 16px; padding: 20px; max-height: 90vh; overflow-y: auto; }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .modal-content { background: #F2F2F7; width: 100%; max-width: 400px; border-radius: 16px; padding: 20px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.15); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
 
-        /* Admin panel Grid */
+        /* Admin Dashboard Stillari */
         .admin-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
-        .admin-card { background: #FFF; padding: 12px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
-        .admin-card h4 { font-size: 12px; color: #8E8E93; text-transform: uppercase; }
-        .admin-card p { font-size: 16px; font-weight: 700; color: #1C1C1E; margin-top: 4px; }
-        .list-item { background: #FFF; padding: 12px 16px; border-bottom: 0.5px solid #E5E5EA; display: flex; justify-content: space-between; align-items: center;}
+        .admin-card { background: #FFF; padding: 14px; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.02); }
+        .admin-card h4 { font-size: 12px; color: #8E8E93; text-transform: uppercase; font-weight: 600; }
+        .admin-card p { font-size: 17px; font-weight: 700; color: #1C1C1E; margin-top: 4px; }
+        
+        .list-item { background: #FFF; padding: 12px 16px; border-bottom: 0.5px solid #E5E5EA; display: flex; justify-content: space-between; align-items: center; }
+        .list-item:last-child { border-bottom: none; }
+        h3 { font-size: 15px; color: #8E8E93; text-transform: uppercase; margin: 16px 0 8px 8px; font-weight: 600; }
+        
+        /* Jadval formati loglar uchun */
+        .log-box { font-size: 11px; font-family: monospace; background: #FFF; padding: 8px; border-radius: 8px; margin-bottom: 6px; border-left: 4px solid #007AFF; }
     </style>
 </head>
 <body>
 
-    <!-- 1. LOGIN OYNASI -->
+    <!-- ================= 1. LOGIN OYNASI ================= -->
     <div id="page-login" class="page active">
         <div class="login-container">
             <div class="login-box">
                 <h1>Ziyo Dizayn</h1>
-                <input type="text" id="login-username" class="login-input" placeholder="Login">
-                <input type="password" id="login-password" class="login-input" placeholder="Parol">
-                <button class="ios-btn-primary" onclick="doLogin()">Kirish</button>
+                <input type="text" id="login-username" class="login-input" placeholder="Foydalanuvchi nomi">
+                <input type="password" id="login-password" class="login-input" placeholder="Maxfiy parol">
+                <button class="ios-btn-primary" onclick="doLogin()">Tizimga Kirish</button>
             </div>
         </div>
     </div>
 
-    <!-- 2. ISHCHI OYNASI (Faqat buyurtma qo'shish) -->
+    <!-- ================= 2. ISHCHI PANEL OYNASI ================= -->
     <div id="page-worker" class="page">
         <div class="ios-header">
-            <h1>Buyurtma</h1>
+            <div>
+                <h1 style="font-size: 24px;">Buyurtma kiritish</h1>
+                <p style="font-size: 12px; color:#8E8E93;">Xodim: <b id="lbl-worker-name" style="color:#007AFF;">...</b></p>
+            </div>
             <button class="settings-btn" onclick="openSettings()">⚙️</button>
         </div>
 
@@ -82,7 +92,8 @@
         </div>
 
         <div class="ios-form-group">
-            <div class="ios-input-row"><label>Mijoz ismi</label><input type="text" id="order-client" placeholder="Ism kiriting"></div>
+            <div class="ios-input-row"><label>Mijoz ismi</label><input type="text" id="order-client" placeholder="Ism familiya"></div>
+            <div class="ios-input-row"><label>Telefon raqami</label><input type="tel" id="order-phone" placeholder="+998"></div>
             <div class="ios-input-row"><label>Eni (sm)</label><input type="number" id="order-width" placeholder="0" inputmode="numeric"></div>
             <div class="ios-input-row"><label>Bo'yi (sm)</label><input type="number" id="order-height" placeholder="0" inputmode="numeric"></div>
             <div class="ios-input-row">
@@ -93,17 +104,13 @@
                     <option value="Qarz">Qarzga yozish</option>
                 </select>
             </div>
-            <div class="ios-input-row">
-                <label>Mas'ul ishchi</label>
-                <select id="order-worker"><option value="Noma'lum">Tanlang...</option></select>
-            </div>
         </div>
 
         <div class="quick-result-box" id="workerResult"><p>O'lchamlarni kiriting...</p></div>
-        <button class="ios-btn-primary" id="btnSubmitOrder">Buyurtmani Saqlash</button>
+        <button class="ios-btn-primary" onclick="prepareReceipt()">Buyurtmani Saqlash</button>
     </div>
 
-    <!-- 3. SOZLAMALAR OYNASI (Narxlar va Admin tugmasi) -->
+    <!-- ================= 3. SOZLAMALAR MODAL OYNASI ================= -->
     <div id="modal-settings" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
@@ -111,7 +118,7 @@
                 <button onclick="closeSettings()" style="color:#007AFF; font-size:16px; background:none; border:none; font-weight:bold;">Yopish</button>
             </div>
             
-            <p style="font-size:13px; color:#8E8E93; margin-bottom:8px; margin-left:8px;">MATERIAL NARXLARI (1 m²)</p>
+            <p style="font-size:12px; color:#8E8E93; margin-bottom:6px; margin-left:6px;">MATERIAL NARXLARI (1 m²)</p>
             <div class="ios-form-group">
                 <div class="ios-input-row"><label>Banner</label><input type="number" id="price-banner" value="45000"></div>
                 <div class="ios-input-row"><label>Arakal</label><input type="number" id="price-arakal" value="75000"></div>
@@ -119,53 +126,83 @@
             </div>
             <button class="ios-btn-primary" onclick="savePrices()" style="padding:12px; font-size:15px; margin-bottom:20px;">Narxlarni Yangilash</button>
 
-            <button class="ios-btn-primary" onclick="goToAdmin()" style="background:#34C759; border-radius:12px;">📊 Admin Panelga Kirish</button>
+            <button class="ios-btn-primary" onclick="goToAdmin()" style="background:#34C759;">📊 Admin Panelga Kirish</button>
         </div>
     </div>
 
-    <!-- 4. ADMIN PANEL OYNASI (Barcha ma'lumotlar) -->
+    <!-- ================= 4. CHEKNI TASDIQLASH MODALI ================= -->
+    <div id="modal-receipt" class="modal-overlay">
+        <div class="modal-content" style="background:#FFF;">
+            <div id="receipt-print-area" style="padding:10px; font-family:monospace; color:#000;">
+                <div style="text-align:center; margin-bottom:15px;">
+                    <h3 id="receipt-header-title" style="color:#000; margin:0; font-size:18px;">*** ZIYO DIZAYN SCHET ***</h3>
+                    <p style="font-size:11px;" id="receipt-date">Sana: ...</p>
+                </div>
+                <div style="border-bottom:1px dashed #000; margin-bottom:10px;"></div>
+                <p style="margin-bottom:6px;"><b>Mijoz:</b> <span id="r-client">...</span></p>
+                <p style="margin-bottom:6px;"><b>Tel:</b> <span id="r-phone">...</span></p>
+                <p style="margin-bottom:6px;"><b>O'lchamlar:</b> <span id="r-dims">...</span></p>
+                <p style="margin-bottom:6px;"><b>Material:</b> <span id="r-mat">...</span></p>
+                <p style="margin-bottom:6px;"><b>To'lov turi:</b> <span id="r-pay">...</span></p>
+                <p style="margin-bottom:6px;"><b>Qabul qildi:</b> <span id="r-worker">...</span></p>
+                <div style="border-bottom:1px dashed #000; margin-top:10px; margin-bottom:10px;"></div>
+                <p style="font-size:16px; text-align:right;"><b>JAMI: <span id="r-total">0</span> UZS</b></p>
+                <div style="text-align:center; margin-top:15px; font-size:10px;" id="receipt-footer-title">Xizmatlarimizdan foydalanganingiz uchun rahmat!</div>
+            </div>
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button class="ios-btn-primary" onclick="closeReceipt()" style="background:#FF3B30; padding:12px;">Ortga</button>
+                <button class="ios-btn-primary" onclick="submitOrderFinal()" style="background:#34C759; padding:12px;">Tasdiqlash</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= 5. MUKAMMAL ADMIN PANEL ================= -->
     <div id="page-admin" class="page">
         <div class="ios-header">
             <h1>Admin Panel</h1>
             <button onclick="goToWorker()" style="color:#007AFF; font-size:16px; background:none; border:none; font-weight:bold;">Orqaga</button>
         </div>
 
-        <h3>💰 Kassa holati</h3>
-        <div class="admin-grid" style="margin-top:8px;">
+        <h3>💰 Moliyaviy kassa holati</h3>
+        <div class="admin-grid">
             <div class="admin-card"><h4 style="color:#34C759;">Naqd kassa</h4><p id="cash-naqd">0 UZS</p></div>
             <div class="admin-card"><h4 style="color:#007AFF;">Click kassa</h4><p id="cash-click">0 UZS</p></div>
             <div class="admin-card" style="grid-column: span 2;"><h4 style="color:#FF3B30;">Umumiy Faol Qarzlar</h4><p id="cash-qarz" style="color:#FF3B30;">0 UZS</p></div>
         </div>
 
-        <h3>💸 Kassa operatsiyasi (Kirim/Chiqim)</h3>
-        <div class="ios-form-group" style="margin-top:8px;">
-            <div class="ios-input-row">
-                <label>Turi</label>
-                <select id="flow-type"><option value="Kirim">Kirim (+)</option><option value="Chiqim">Chiqim (-)</option></select>
-            </div>
-            <div class="ios-input-row"><label>Summa</label><input type="number" id="flow-amount" placeholder="0"></div>
-            <div class="ios-input-row">
-                <label>To'lov shakli</label>
-                <select id="flow-method"><option value="Naqd">Naqd</option><option value="Click">Click</option></select>
-            </div>
-            <div class="ios-input-row"><label>Izoh</label><input type="text" id="flow-desc" placeholder="Nimaga?"></div>
+        <h3>👥 Xodimlar statistikasi & Samaradorlik</h3>
+        <div class="ios-form-group" id="worker-stats-container">
+            <p style="padding:15px; color:#8E8E93;">Hisoblanmoqda...</p>
         </div>
-        <button class="ios-btn-primary" onclick="saveFlow()" style="padding:12px; font-size:14px; margin-bottom:20px;">Kassaga yozish</button>
 
-        <h3>👥 Ishchilar boshqaruvi</h3>
-        <div class="ios-form-group" style="margin-top:8px;">
-            <div class="ios-input-row"><label>F.I.Sh</label><input type="text" id="new-worker-name" placeholder="Yangi ishchi ismi"></div>
+        <h3>👥 Yangi xodim qo'shish</h3>
+        <div class="ios-form-group">
+            <div class="ios-input-row"><label>To'liq ismi</label><input type="text" id="new-worker-name" placeholder="Ism Familiya"></div>
+            <div class="ios-input-row"><label>Login</label><input type="text" id="new-worker-login" placeholder="Login"></div>
+            <div class="ios-input-row"><label>Parol</label><input type="text" id="new-worker-pass" placeholder="Parol"></div>
         </div>
-        <button class="ios-btn-primary" onclick="addWorker()" style="padding:12px; font-size:14px; margin-bottom:20px; background:#5856D6;">Ishchi qo'shish</button>
+        <button class="ios-btn-primary" onclick="addWorker()" style="padding:12px; font-size:14px; margin-bottom:20px; background:#5856D6;">Yangi Xodim Saqlash</button>
 
-        <h3>🚨 Faol qarzlar</h3>
-        <div class="ios-form-group" id="listDebts" style="margin-top:8px;"></div>
+        <h3>✏️ Chek matnini tahrirlash</h3>
+        <div class="ios-form-group">
+            <div class="ios-input-row"><label>Chek Sarlavha</label><input type="text" id="edit-receipt-header" value="*** ZIYO DIZAYN SCHET ***"></div>
+            <div class="ios-input-row"><label>Chek Ostmatni</label><input type="text" id="edit-receipt-footer" value="Xizmatlarimizdan foydalanganingiz uchun rahmat!"></div>
+        </div>
+        <button class="ios-btn-primary" onclick="updateReceiptTemplate()" style="padding:10px; font-size:13px; margin-bottom:20px; background:#FF9500;">Chek Sozlamasini Saqlash</button>
+
+        <h3>📜 Tizim Amaliyotlar Jurnali (Logs)</h3>
+        <div class="ios-form-group" id="log-list-container" style="max-height:250px; overflow-y:auto; padding:10px; background:#E5E5EA;">
+            <p style="color:#8E8E93;">Yuklanmoqda...</p>
+        </div>
+
+        <h3>🚨 Mijoz qarzlar ro'yxati</h3>
+        <div class="ios-form-group" id="listDebts"></div>
 
         <h3>⏳ Kutilayotgan buyurtmalar</h3>
-        <div class="ios-form-group" id="listPendingOrders" style="margin-top:8px;"></div>
+        <div class="ios-form-group" id="listPendingOrders"></div>
 
         <h3>📦 Topshirilgan buyurtmalar (Arxiv)</h3>
-        <div class="ios-form-group" id="listArchivedOrders" style="margin-top:8px;"></div>
+        <div class="ios-form-group" id="listArchivedOrders"></div>
     </div>
 
     <script>
@@ -173,64 +210,92 @@
         const SUPABASE_ANON_KEY = "sb_publishable_ZxsMtYclbSrGigXep40XYQ_g0OJG9rE";
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // Boshlang'ich narxlar (Siz aytgandek)
         let currentPrices = { banner: 45000, arakal: 75000, setka: 85000 };
         let currentMaterial = "banner";
+        let sessionUser = "";
 
-        // ================= SAHIFALARNI BOSHQARISH =================
+        // Tizim jurnali (Logs) funksiyasi (O'zgartirib/O'chirib bo'lmaydi)
+        async function logAction(username, panel, action, details) {
+            await supabaseClient.from('system_logs').insert([{
+                username: username, panel_type: panel, action_type: action, details: details
+            }]);
+        }
+
         function showPage(pageId) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById(pageId).classList.add('active');
         }
 
-        // Oddiy Login funksiyasi
-        function doLogin() {
-            const user = document.getElementById('login-username').value;
-            const pass = document.getElementById('login-password').value;
-            if(user && pass) {
+        // ================= SECURITY LOGIN TIZIMI =================
+        async function doLogin() {
+            const user = document.getElementById('login-username').value.trim();
+            const pass = document.getElementById('login-password').value.trim();
+
+            if(user === "Javohir" && pass === "20060818") {
+                sessionUser = "Javohir";
+                document.getElementById('lbl-worker-name').innerText = sessionUser;
+                await logAction(sessionUser, "Ishchi", "Kirish", "Javohir asosiy profil orqali kirdi.");
                 showPage('page-worker');
-                loadWorkersData();
+                fetchPrices();
+                return;
+            }
+
+            // Bazadan boshqa ishchilarni tekshirish
+            let { data, error } = await supabaseClient.from('employees').select('*').eq('login', user).eq('password', pass).single();
+            if(data) {
+                sessionUser = data.full_name;
+                document.getElementById('lbl-worker-name').innerText = sessionUser;
+                await logAction(sessionUser, "Ishchi", "Kirish", `${sessionUser} tizimga kirdi.`);
+                showPage('page-worker');
                 fetchPrices();
             } else {
-                alert("Iltimos, login va parolni kiriting!");
+                alert("Login yoki maxfiy parol xato!");
             }
         }
 
         function openSettings() { document.getElementById('modal-settings').classList.add('show'); }
         function closeSettings() { document.getElementById('modal-settings').classList.remove('show'); }
         
-        function goToAdmin() {
-            closeSettings();
-            showPage('page-admin');
-            loadAdminData();
+        async function goToAdmin() {
+            const user = document.getElementById('login-username').value.trim();
+            const adminCode = prompt("Admin parolini kiriting:");
+            if(adminCode === "ziyo") {
+                await logAction(user || "Admin", "Admin", "Kirish", "Admin paneliga kirish muvaffaqiyatli bajarildi.");
+                closeSettings();
+                showPage('page-admin');
+                loadAdminData();
+            } else {
+                alert("Admin paroli xato!");
+            }
         }
         function goToWorker() { showPage('page-worker'); }
 
-        // ================= ISHCHI PANEL MANTIQI =================
+        // ================= ISHCHI FORMULYARI MANTIQI =================
         document.querySelectorAll('.segment-item').forEach(btn => {
             btn.addEventListener('click', function() {
                 document.querySelectorAll('.segment-item').forEach(b => b.classList.remove('active'));
                 this.classList.add('active');
                 currentMaterial = this.getAttribute('data-material');
-                calcWorkerOrder();
+                calcOrder();
             });
         });
 
-        function calcWorkerOrder() {
+        function calcOrder() {
             const w = parseFloat(document.getElementById('order-width').value) || 0;
             const h = parseFloat(document.getElementById('order-height').value) || 0;
             if(w > 0 && h > 0) {
                 const sqm = (w * h) / 10000;
                 const cost = sqm * currentPrices[currentMaterial];
                 document.getElementById('workerResult').innerHTML = `<p>📐 <b>${sqm.toFixed(2)} m²</b> | 💰 <b>${Math.round(cost).toLocaleString()} UZS</b></p>`;
+                return { sqm, total: Math.round(cost) };
             } else {
                 document.getElementById('workerResult').innerHTML = `<p>O'lchamlarni kiriting...</p>`;
+                return null;
             }
         }
-        document.getElementById('order-width').addEventListener('input', calcWorkerOrder);
-        document.getElementById('order-height').addEventListener('input', calcWorkerOrder);
+        document.getElementById('order-width').addEventListener('input', calcOrder);
+        document.getElementById('order-height').addEventListener('input', calcOrder);
 
-        // Narxlarni bazadan o'qish va modalga yozish
         async function fetchPrices() {
             let { data } = await supabaseClient.from('material_prices').select('*');
             if(data && data.length > 0) {
@@ -243,7 +308,6 @@
             }
         }
 
-        // Ishchi/Admin narxlarni o'zgartirishi
         async function savePrices() {
             const materials = ['banner', 'arakal', 'setka'];
             for (const mat of materials) {
@@ -251,135 +315,218 @@
                 currentPrices[mat] = val;
                 await supabaseClient.from('material_prices').upsert({ material_name: mat, price: val }, { onConflict: 'material_name' });
             }
-            alert("Narxlar yangilandi!");
-            calcWorkerOrder();
+            await logAction(sessionUser, "Ishchi", "Narx o'zgartirish", `Yangi narxlar: B:${currentPrices.banner}, A:${currentPrices.arakal}, S:${currentPrices.setka}`);
+            alert("Narxlar muvaffaqiyatli saqlandi!");
+            calcOrder();
             closeSettings();
         }
 
-        // Ishchilar ro'yxatini yuklash
-        async function loadWorkersData() {
-            let { data } = await supabaseClient.from('employees').select('*');
-            const select = document.getElementById('order-worker');
-            select.innerHTML = '<option value="Noma\'lum">Tanlang...</option>';
-            if(data) { data.forEach(emp => { select.innerHTML += `<option value="${emp.full_name}">${emp.full_name}</option>`; }); }
-        }
+        // ================= CHEK VERIFIKATSIYASI =================
+        let pendingOrderObject = null;
 
-        // Buyurtmani saqlash
-        document.getElementById('btnSubmitOrder').addEventListener('click', async () => {
+        function prepareReceipt() {
             const client = document.getElementById('order-client').value.trim() || "Noma'lum";
+            const phone = document.getElementById('order-phone').value.trim() || "Kiritilmagan";
             const w = parseFloat(document.getElementById('order-width').value) || 0;
             const h = parseFloat(document.getElementById('order-height').value) || 0;
             const pay = document.getElementById('order-payment').value;
-            const emp = document.getElementById('order-worker').value;
 
-            if(w <= 0 || h <= 0) { alert("O'lchamlarni kiriting!"); return; }
+            const res = calcOrder();
+            if(!res || w <= 0 || h <= 0) { alert("Iltimos o'lchamlarni to'liq kiriting!"); return; }
 
-            const sqm = (w * h) / 10000;
-            const total = Math.round(sqm * currentPrices[currentMaterial]);
+            pendingOrderObject = { client, phone, w, h, pay, sqm: res.sqm, total: res.total, material: currentMaterial };
+
+            // Chek ma'lumotlarini to'ldirish
+            document.getElementById('receipt-date').innerText = "Sana: " + new Date().toLocaleString('uz-UZ');
+            document.getElementById('r-client').innerText = client;
+            document.getElementById('r-phone').innerText = phone;
+            document.getElementById('r-dims').innerText = `${w} x ${h} sm (${res.sqm.toFixed(2)} m²)`;
+            document.getElementById('r-mat').innerText = currentMaterial.toUpperCase();
+            document.getElementById('r-pay').innerText = pay;
+            document.getElementById('r-worker').innerText = sessionUser;
+            document.getElementById('r-total').innerText = res.total.toLocaleString();
+
+            document.getElementById('modal-receipt').classList.add('show');
+        }
+
+        function closeReceipt() { document.getElementById('modal-receipt').classList.remove('show'); }
+
+        async function submitOrderFinal() {
+            if(!pendingOrderObject) return;
+            const p = pendingOrderObject;
 
             const { error } = await supabaseClient.from('orders').insert([{
-                client_name: client, material: currentMaterial, width: w, height: h, sqm: sqm, total_price: total, payment_method: pay, worker_name: emp
+                client_name: p.client, material: p.material, width: p.w, height: p.h, sqm: p.sqm, total_price: p.total, payment_method: p.pay, worker_name: sessionUser
             }]);
 
-            if(pay === 'Qarz') {
-                await supabaseClient.from('debts').insert([{ client_name: client, amount: total }]);
+            if(p.pay === 'Qarz') {
+                await supabaseClient.from('debts').insert([{ client_name: `${p.client} (${p.phone})`, amount: p.total }]);
             } else {
-                await supabaseClient.from('cash_flow').insert([{ type: 'Kirim', amount: total, payment_method: pay, description: `${client} buyurtmasi` }]);
+                await supabaseClient.from('cash_flow').insert([{ type: 'Kirim', amount: p.total, payment_method: p.pay, description: `${p.client} buyurtmasi` }]);
             }
+
+            await logAction(sessionUser, "Ishchi", "Buyurtma saqlash", `Mijoz: ${p.client}, Tel: ${p.phone}, Summa: ${p.total} UZS, To'lov: ${p.pay}`);
 
             if(!error) {
-                alert("Buyurtma saqlandi!");
-                document.getElementById('order-client').value = ''; document.getElementById('order-width').value = ''; document.getElementById('order-height').value = '';
-                calcWorkerOrder();
+                alert("Buyurtma muvaffaqiyatli saqlandi va kassa yangilandi! 🎉");
+                document.getElementById('order-client').value = '';
+                document.getElementById('order-phone').value = '';
+                document.getElementById('order-width').value = '';
+                document.getElementById('order-height').value = '';
+                calcOrder();
+                closeReceipt();
             }
-        });
+        }
 
-        // ================= ADMIN PANEL MANTIQI =================
+        // ================= ADMIN DASHBOARD TIZIMI =================
+        function updateReceiptTemplate() {
+            const head = document.getElementById('edit-receipt-header').value;
+            const foot = document.getElementById('edit-receipt-footer').value;
+            document.getElementById('receipt-header-title').innerText = head;
+            document.getElementById('receipt-footer-title').innerText = foot;
+            alert("Chek dizayn qoliplari saqlandi!");
+        }
+
+        async function addWorker() {
+            const name = document.getElementById('new-worker-name').value.trim();
+            const log = document.getElementById('new-worker-login').value.trim();
+            const pass = document.getElementById('new-worker-pass').value.trim();
+
+            if(!name || !log || !pass) { alert("Hamma qatorlarni to'ldiring!"); return; }
+            await supabaseClient.from('employees').insert([{ full_name: name, login: log, password: pass, role: 'worker' }]);
+            await logAction("Admin", "Admin", "Ishchi qo'shish", `Yangi xodim qo'shildi: ${name}`);
+            alert("Yangi xodim qo'shildi!");
+            document.getElementById('new-worker-name').value = '';
+            document.getElementById('new-worker-login').value = '';
+            document.getElementById('new-worker-pass').value = '';
+            loadAdminData();
+        }
+
         async function loadAdminData() {
-            // Kassa hisobi
+            // 1. Kassa Hisobi
             let { data: flows } = await supabaseClient.from('cash_flow').select('*');
-            let naqd = 0, click = 0;
+            let n = 0, c = 0;
             if(flows) {
                 flows.forEach(f => {
                     let sign = f.type === 'Kirim' ? 1 : -1;
-                    if(f.payment_method === 'Naqd') naqd += (f.amount * sign);
-                    if(f.payment_method === 'Click') click += (f.amount * sign);
+                    if(f.payment_method === 'Naqd') n += (f.amount * sign);
+                    if(f.payment_method === 'Click') c += (f.amount * sign);
                 });
             }
-            document.getElementById('cash-naqd').innerText = `${naqd.toLocaleString()} UZS`;
-            document.getElementById('cash-click').innerText = `${click.toLocaleString()} UZS`;
+            document.getElementById('cash-naqd').innerText = `${n.toLocaleString()} UZS`;
+            document.getElementById('cash-click').innerText = `${c.toLocaleString()} UZS`;
 
-            // Qarzlar
+            // 2. Qarzlar holati
             let { data: debts } = await supabaseClient.from('debts').select('*').eq('status', 'To\'lanmagan');
             let totalD = debts ? debts.reduce((s, i) => s + i.amount, 0) : 0;
             document.getElementById('cash-qarz').innerText = `${totalD.toLocaleString()} UZS`;
+
+            // 3. Tizim amaliyotlar jurnali (Logs) yuklash
+            let { data: logs } = await supabaseClient.from('system_logs').select('*').order('created_at', { ascending: false }).limit(40);
+            const logContainer = document.getElementById('log-list-container');
+            logContainer.innerHTML = '';
+            if(logs) {
+                logs.forEach(l => {
+                    const time = new Date(l.created_at).toLocaleString('uz-UZ');
+                    logContainer.innerHTML += `<div class="log-box">
+                        <b>[${time}] [Panel: ${l.panel_type}] - Xodim: ${l.username}</b><br>
+                        <span>Amal: <mark>${l.action_type}</mark> | ${l.details}</span>
+                    </div>`;
+                });
+            }
+
+            // 4. Xodimlar statistikasi va Samaradorlik (Oy oxiri hisobi uchun)
+            let { data: allOrders } = await supabaseClient.from('orders').select('*');
+            const statsDiv = document.getElementById('worker-stats-container');
+            statsDiv.innerHTML = '';
             
+            if(allOrders && allOrders.length > 0) {
+                let workerMetrics = {};
+                let globalTotalSum = 0;
+
+                allOrders.forEach(o => {
+                    globalTotalSum += o.total_price;
+                    if(!workerMetrics[o.worker_name]) {
+                        workerMetrics[o.worker_name] = { total: 0, naqd: 0, click: 0, qarz: 0, count: 0 };
+                    }
+                    workerMetrics[o.worker_name].count += 1;
+                    workerMetrics[o.worker_name].total += o.total_price;
+                    if(o.payment_method === 'Naqd') workerMetrics[o.worker_name].naqd += o.total_price;
+                    if(o.payment_method === 'Click') workerMetrics[o.worker_name].click += o.total_price;
+                    if(o.payment_method === 'Qarz') workerMetrics[o.worker_name].qarz += o.total_price;
+                });
+
+                Object.keys(workerMetrics).forEach(wName => {
+                    let m = workerMetrics[wName];
+                    let efficiency = globalTotalSum > 0 ? ((m.total / globalTotalSum) * 100).toFixed(1) : 0;
+                    statsDiv.innerHTML += `<div style="padding:12px; border-bottom:1px solid #E5E5EA; font-size:13px;">
+                        <div style="display:flex; justify-content:between; font-weight:bold; font-size:15px; color:#007AFF;">
+                            <span>👤 ${wName}</span>
+                            <span style="margin-left:auto; background:#34C759; color:#FFF; padding:2px 6px; border-radius:6px; font-size:11px;">Samaradorlik: ${efficiency}%</span>
+                        </div>
+                        <div style="margin-top:6px; display:grid; grid-template-columns: repeat(2, 1fr); gap:4px; color:#555;">
+                            <div>Buyurtmalar soni: <b>${m.count} ta</b></div>
+                            <div>Jami kassa: <b>${m.total.toLocaleString()} UZS</b></div>
+                            <div style="color:#34C759;">💵 Naqd: ${m.naqd.toLocaleString()}</div>
+                            <div style="color:#007AFF;">💳 Click: ${m.click.toLocaleString()}</div>
+                            <div style="color:#FF3B30; grid-column: span 2;">🚨 Qarzga yozgani: ${m.qarz.toLocaleString()} UZS</div>
+                        </div>
+                    </div>`;
+                });
+            } else {
+                statsDiv.innerHTML = '<p style="padding:15px; color:#8E8E93;">Hozircha xodimlar bo\'yicha buyurtmalar tarixi bo\'sh.</p>';
+            }
+
+            // 5. Qarzlar ro'yxati interfeysi
             const debtsDiv = document.getElementById('listDebts');
-            debtsDiv.innerHTML = debts && debts.length > 0 ? '' : '<p style="padding:15px;">Qarz yo\'q</p>';
+            debtsDiv.innerHTML = debts && debts.length > 0 ? '' : '<p style="padding:15px; color:#8E8E93;">Faol qarzlar yo\'q</p>';
             if(debts) {
                 debts.forEach(d => {
                     debtsDiv.innerHTML += `<div class="list-item">
                         <div><b>${d.client_name}</b></div>
-                        <div style="text-align:right;"><span style="color:#FF3B30;">${d.amount.toLocaleString()} UZS</span><br>
-                        <button onclick="payDebt(${d.id}, '${d.client_name}', ${d.amount})" style="background:#34C759; color:#FFF; border:none; padding:4px 8px; border-radius:4px; font-size:12px; margin-top:4px;">Yopish</button></div>
+                        <div style="text-align:right;"><span style="color:#FF3B30; font-weight:bold;">${d.amount.toLocaleString()} UZS</span><br>
+                        <button onclick="payDebt(${d.id}, '${d.client_name}', ${d.amount})" style="background:#34C759; color:#FFF; border:none; padding:4px 8px; border-radius:4px; font-size:11px; margin-top:4px; cursor:pointer;">Yopish</button></div>
                     </div>`;
                 });
             }
 
-            // Kutilayotgan buyurtmalar
+            // 6. Kutilayotgan buyurtmalar interfeysi
             let { data: pOrders } = await supabaseClient.from('orders').select('*').eq('status', 'Kutilmoqda');
             const pendingDiv = document.getElementById('listPendingOrders');
-            pendingDiv.innerHTML = pOrders && pOrders.length > 0 ? '' : '<p style="padding:15px;">Bo\'sh</p>';
+            pendingDiv.innerHTML = pOrders && pOrders.length > 0 ? '' : '<p style="padding:15px; color:#8E8E93;">Navbatda turgan ishlar yo\'q</p>';
             if(pOrders) {
                 pOrders.forEach(o => {
                     pendingDiv.innerHTML += `<div class="list-item">
-                        <div><b>${o.client_name}</b><br><small>${o.material} | ${o.sqm.toFixed(2)} m²</small></div>
-                        <button onclick="archiveOrder(${o.id})" style="background:#007AFF; color:#FFF; border:none; padding:6px 10px; border-radius:6px; font-size:12px;">Topshirish</button>
+                        <div><b>${o.client_name}</b><br><small>${o.material.toUpperCase()} | ${o.sqm.toFixed(2)} m²</small></div>
+                        <button onclick="archiveOrder(${o.id}, '${o.client_name}')" style="background:#007AFF; color:#FFF; border:none; padding:6px 10px; border-radius:6px; font-size:12px; cursor:pointer;">Topshirish</button>
                     </div>`;
                 });
             }
 
-            // Arxiv (Topshirilgan)
+            // 7. Topshirilgan buyurtmalar (Arxiv)
             let { data: aOrders } = await supabaseClient.from('orders').select('*').eq('status', 'Olib ketildi');
             const archivedDiv = document.getElementById('listArchivedOrders');
-            archivedDiv.innerHTML = aOrders && aOrders.length > 0 ? '' : '<p style="padding:15px;">Arxiv bo\'sh</p>';
+            archivedDiv.innerHTML = aOrders && aOrders.length > 0 ? '' : '<p style="padding:15px; color:#8E8E93;">Arxiv hozircha bo\'sh</p>';
             if(aOrders) {
                 aOrders.forEach(o => {
                     archivedDiv.innerHTML += `<div class="list-item" style="color:#8E8E93;">
-                        <div><b>${o.client_name}</b><br><small>${o.material} | ${o.sqm.toFixed(2)} m²</small></div>
-                        <div>${o.total_price.toLocaleString()} UZS</div>
+                        <div><b>${o.client_name}</b><br><small>${o.material.toUpperCase()} | ${o.sqm.toFixed(2)} m² | Mas'ul: ${o.worker_name}</small></div>
+                        <div><b>${o.total_price.toLocaleString()} UZS</b></div>
                     </div>`;
                 });
             }
         }
 
-        async function saveFlow() {
-            const t = document.getElementById('flow-type').value;
-            const a = parseFloat(document.getElementById('flow-amount').value) || 0;
-            const m = document.getElementById('flow-method').value;
-            const d = document.getElementById('flow-desc').value;
-            if(a>0) {
-                await supabaseClient.from('cash_flow').insert([{ type: t, amount: a, payment_method: m, description: d }]);
-                document.getElementById('flow-amount').value=''; document.getElementById('flow-desc').value='';
-                loadAdminData();
-            }
+        async function archiveOrder(id, client) {
+            await supabaseClient.from('orders').update({ status: 'Olib ketildi' }).eq('id', id);
+            await logAction(sessionUser || "Admin", "Admin", "Buyurtma topshirildi", `Mijoz: ${client} buyurtmasini olib ketdi.`);
+            loadAdminData();
         }
-
-        async function addWorker() {
-            const n = document.getElementById('new-worker-name').value.trim();
-            if(n) {
-                await supabaseClient.from('employees').insert([{ full_name: n }]);
-                document.getElementById('new-worker-name').value='';
-                loadWorkersData();
-                alert('Ishchi qo\'shildi!');
-            }
-        }
-
-        async function archiveOrder(id) { await supabaseClient.from('orders').update({ status: 'Olib ketildi' }).eq('id', id); loadAdminData(); }
         
         async function payDebt(id, client, amount) {
             await supabaseClient.from('debts').update({ status: 'To\'landi' }).eq('id', id);
             await supabaseClient.from('cash_flow').insert([{ type: 'Kirim', amount: amount, payment_method: 'Naqd', description: `${client} qarz to'lovi` }]);
+            await logAction(sessionUser || "Admin", "Admin", "Qarz yopildi", `Mijoz: ${client}, Summa: ${amount} UZS`);
             loadAdminData();
         }
     </script>

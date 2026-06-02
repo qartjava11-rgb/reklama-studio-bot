@@ -107,7 +107,7 @@
         </div>
 
         <div class="quick-result-box" id="workerResult"><p>O'lchamlarni kiriting...</p></div>
-        <button class="ios-btn-primary" onclick="prepareReceipt()">Buyurtmani Saqlash</button>
+        <button class="ios-btn-primary" onclick="prepareReceipt()">Buyurtma Saqlash</button>
     </div>
 
     <!-- ================= 3. SOZLAMALAR MODAL OYNASI ================= -->
@@ -126,7 +126,28 @@
             </div>
             <button class="ios-btn-primary" onclick="savePrices()" style="padding:12px; font-size:15px; margin-bottom:20px;">Narxlarni Yangilash</button>
 
-            <button class="ios-btn-primary" onclick="goToAdmin()" style="background:#34C759;">📊 Admin Panelga Kirish</button>
+            <button class="ios-btn-primary" onclick="openAdminLoginModal()" style="background:#34C759;">📊 Admin Panelga Kirish</button>
+        </div>
+    </div>
+
+    <!-- ================= MODAL: ADMIN LOGIN OYNASI (PROMPT O'RNIGA) ================= -->
+    <div id="modal-admin-login" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🔐 Admin Tasdiqlash</h2>
+                <button onclick="closeAdminLoginModal()" style="color:#FF3B30; font-size:16px; background:none; border:none; font-weight:bold;">Yopish</button>
+            </div>
+            <div class="ios-form-group">
+                <div class="ios-input-row">
+                    <label>Admin Ismi</label>
+                    <input type="text" id="admin-input-name" placeholder="Ismingizni kiriting">
+                </div>
+                <div class="ios-input-row">
+                    <label>Admin Kodi</label>
+                    <input type="password" id="admin-input-pass" placeholder="Kodni kiriting">
+                </div>
+            </div>
+            <button class="ios-btn-primary" onclick="verifyAdminLogin()" style="background:#34C759;">Tasdiqlash & Kirish</button>
         </div>
     </div>
 
@@ -240,7 +261,6 @@
                 return;
             }
 
-            // Bazadan boshqa ishchilarni tekshirish
             let { data, error } = await supabaseClient.from('employees').select('*').eq('login', user).eq('password', pass).single();
             if(data) {
                 sessionUser = data.full_name;
@@ -256,18 +276,38 @@
         function openSettings() { document.getElementById('modal-settings').classList.add('show'); }
         function closeSettings() { document.getElementById('modal-settings').classList.remove('show'); }
         
-        async function goToAdmin() {
-            const user = document.getElementById('login-username').value.trim();
-            const adminCode = prompt("Admin parolini kiriting:");
-            if(adminCode === "ziyo") {
-                await logAction(user || "Admin", "Admin", "Kirish", "Admin paneliga kirish muvaffaqiyatli bajarildi.");
-                closeSettings();
+        // ================= ADMIN MODAL BOSHQARUVI =================
+        function openAdminLoginModal() {
+            closeSettings();
+            document.getElementById('admin-input-name').value = sessionUser || "";
+            document.getElementById('admin-input-pass').value = "";
+            document.getElementById('modal-admin-login').classList.add('show');
+        }
+
+        function closeAdminLoginModal() {
+            document.getElementById('modal-admin-login').classList.remove('show');
+        }
+
+        async function verifyAdminLogin() {
+            const adminName = document.getElementById('admin-input-name').value.trim();
+            const adminPass = document.getElementById('admin-input-pass').value.trim();
+
+            if(!adminName) {
+                alert("Iltimos admin ismini kiriting!");
+                return;
+            }
+
+            if(adminPass === "ziyo") {
+                await logAction(adminName, "Admin", "Kirish", `${adminName} admin panelga muvaffaqiyatli kirdi.`);
+                closeAdminLoginModal();
                 showPage('page-admin');
                 loadAdminData();
             } else {
                 alert("Admin paroli xato!");
+                await logAction(adminName, "Admin", "Muvaffaqiyatsiz kirish", `${adminName} noto'g'ri admin kodini kiritdi.`);
             }
         }
+
         function goToWorker() { showPage('page-worker'); }
 
         // ================= ISHCHI FORMULYARI MANTIQI =================
@@ -336,7 +376,6 @@
 
             pendingOrderObject = { client, phone, w, h, pay, sqm: res.sqm, total: res.total, material: currentMaterial };
 
-            // Chek ma'lumotlarini to'ldirish
             document.getElementById('receipt-date').innerText = "Sana: " + new Date().toLocaleString('uz-UZ');
             document.getElementById('r-client').innerText = client;
             document.getElementById('r-phone').innerText = phone;
@@ -368,7 +407,7 @@
             await logAction(sessionUser, "Ishchi", "Buyurtma saqlash", `Mijoz: ${p.client}, Tel: ${p.phone}, Summa: ${p.total} UZS, To'lov: ${p.pay}`);
 
             if(!error) {
-                alert("Buyurtma muvaffaqiyatli saqlandi va kassa yangilandi! 🎉");
+                alert("Buyurtma muvaffaqiyatli saqlandi! 🎉");
                 document.getElementById('order-client').value = '';
                 document.getElementById('order-phone').value = '';
                 document.getElementById('order-width').value = '';
@@ -403,7 +442,6 @@
         }
 
         async function loadAdminData() {
-            // 1. Kassa Hisobi
             let { data: flows } = await supabaseClient.from('cash_flow').select('*');
             let n = 0, c = 0;
             if(flows) {
@@ -416,12 +454,10 @@
             document.getElementById('cash-naqd').innerText = `${n.toLocaleString()} UZS`;
             document.getElementById('cash-click').innerText = `${c.toLocaleString()} UZS`;
 
-            // 2. Qarzlar holati
             let { data: debts } = await supabaseClient.from('debts').select('*').eq('status', 'To\'lanmagan');
             let totalD = debts ? debts.reduce((s, i) => s + i.amount, 0) : 0;
             document.getElementById('cash-qarz').innerText = `${totalD.toLocaleString()} UZS`;
 
-            // 3. Tizim amaliyotlar jurnali (Logs) yuklash
             let { data: logs } = await supabaseClient.from('system_logs').select('*').order('created_at', { ascending: false }).limit(40);
             const logContainer = document.getElementById('log-list-container');
             logContainer.innerHTML = '';
@@ -435,7 +471,6 @@
                 });
             }
 
-            // 4. Xodimlar statistikasi va Samaradorlik (Oy oxiri hisobi uchun)
             let { data: allOrders } = await supabaseClient.from('orders').select('*');
             const statsDiv = document.getElementById('worker-stats-container');
             statsDiv.innerHTML = '';
@@ -477,7 +512,6 @@
                 statsDiv.innerHTML = '<p style="padding:15px; color:#8E8E93;">Hozircha xodimlar bo\'yicha buyurtmalar tarixi bo\'sh.</p>';
             }
 
-            // 5. Qarzlar ro'yxati interfeysi
             const debtsDiv = document.getElementById('listDebts');
             debtsDiv.innerHTML = debts && debts.length > 0 ? '' : '<p style="padding:15px; color:#8E8E93;">Faol qarzlar yo\'q</p>';
             if(debts) {
@@ -490,7 +524,6 @@
                 });
             }
 
-            // 6. Kutilayotgan buyurtmalar interfeysi
             let { data: pOrders } = await supabaseClient.from('orders').select('*').eq('status', 'Kutilmoqda');
             const pendingDiv = document.getElementById('listPendingOrders');
             pendingDiv.innerHTML = pOrders && pOrders.length > 0 ? '' : '<p style="padding:15px; color:#8E8E93;">Navbatda turgan ishlar yo\'q</p>';
@@ -498,12 +531,10 @@
                 pOrders.forEach(o => {
                     pendingDiv.innerHTML += `<div class="list-item">
                         <div><b>${o.client_name}</b><br><small>${o.material.toUpperCase()} | ${o.sqm.toFixed(2)} m²</small></div>
-                        <button onclick="archiveOrder(${o.id}, '${o.client_name}')" style="background:#007AFF; color:#FFF; border:none; padding:6px 10px; border-radius:6px; font-size:12px; cursor:pointer;">Topshirish</button>
-                    </div>`;
+                        <button onclick="archiveOrder(${o.id}, '${o.client_name}')" style="background:#007AFF; color:#FFF; border:none; padding:6px 10px; border-radius:6px; font-size:12px; cursor:pointer;">Topshirish</button></div>`;
                 });
             }
 
-            // 7. Topshirilgan buyurtmalar (Arxiv)
             let { data: aOrders } = await supabaseClient.from('orders').select('*').eq('status', 'Olib ketildi');
             const archivedDiv = document.getElementById('listArchivedOrders');
             archivedDiv.innerHTML = aOrders && aOrders.length > 0 ? '' : '<p style="padding:15px; color:#8E8E93;">Arxiv hozircha bo\'sh</p>';

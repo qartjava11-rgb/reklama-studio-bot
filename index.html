@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Reklama Studio Premium App</title>
-    <!-- Supabase CDN -->
+    <title>Reklama Studio Premium</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* iOS Light Mode Global Stillari */
+        /* iOS Light Mode tizim stillari */
         * {
             box-sizing: border-box;
             margin: 0;
@@ -23,11 +22,9 @@
             display: flex;
             flex-direction: column;
             min-height: 100vh;
-            overflow-x: hidden;
-            position: relative;
         }
 
-        /* Navigatsiya */
+        /* Yuqori qism */
         .ios-header {
             display: flex;
             justify-content: space-between;
@@ -38,7 +35,6 @@
         .ios-header h1 {
             font-size: 26px;
             font-weight: 700;
-            letter-spacing: -0.5px;
         }
 
         .settings-btn {
@@ -47,14 +43,9 @@
             font-size: 26px;
             cursor: pointer;
             padding: 4px;
-            transition: transform 0.2s ease;
         }
 
-        .settings-btn:active {
-            transform: scale(0.9);
-        }
-
-        /* Dinamik Qarz Bildirishnomasi (iOS Alert Banner) */
+        /* Qarzlar haqida eslatma (Alert Box) */
         .ios-debt-alert {
             background: #FFD60A;
             border-radius: 12px;
@@ -62,9 +53,7 @@
             margin-bottom: 16px;
             display: none;
             align-items: center;
-            justify-content: space-between;
             box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-            animation: slideDown 0.3s ease;
         }
 
         .ios-debt-alert p {
@@ -73,7 +62,7 @@
             color: #1C1C1E;
         }
 
-        /* Kvadrat m² Vidjetlari */
+        /* m² ko'rsatkich vidjetlari */
         .stats-container {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -98,12 +87,12 @@
         }
 
         .stat-card .value {
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 700;
             color: #007AFF;
         }
 
-        /* iOS Segmented Control */
+        /* iOS Segmented Control (Material tugmalari) */
         .segmented-control {
             display: flex;
             background: #E5E5EA;
@@ -116,13 +105,13 @@
             flex: 1;
             background: none;
             border: none;
-            padding: 8px 0;
+            padding: 9px 0;
             font-size: 13px;
             font-weight: 600;
             color: #1C1C1E;
             cursor: pointer;
             border-radius: 7px;
-            transition: all 0.2s ease;
+            transition: all 0.15s ease;
         }
 
         .segment-item.active {
@@ -130,7 +119,7 @@
             box-shadow: 0 3px 8px rgba(0,0,0,0.12);
         }
 
-        /* Formalar Guruhi (Oq blok) */
+        /* Guruhlangan kiritish maydonlari */
         .ios-form-group {
             background: #FFFFFF;
             border-radius: 14px;
@@ -170,13 +159,14 @@
             color: #C7C7CC;
         }
 
-        /* Real vaqt hisob oynasi */
+        /* Real vaqt natija oynasi */
         .quick-result-box {
             background: #E4F2FF;
             border-radius: 14px;
             padding: 16px;
             text-align: center;
             margin-bottom: 20px;
+            border: 1px solid #B4D7FF;
         }
 
         .quick-result-box p {
@@ -185,7 +175,7 @@
             color: #007AFF;
         }
 
-        /* iOS Tugmalari */
+        /* Asosiy iOS tugmasi */
         .ios-btn-primary {
             background: #007AFF;
             color: #FFFFFF;
@@ -197,15 +187,13 @@
             width: 100%;
             cursor: pointer;
             box-shadow: 0 4px 12px rgba(0,122,255,0.15);
-            transition: all 0.2s ease;
         }
 
         .ios-btn-primary:active {
-            transform: scale(0.97);
             background: #0063CC;
         }
 
-        /* Yon tarafdagi Admin Panel */
+        /* Faqat tugma orqali ochiladigan Admin Panel */
         .side-settings-panel {
             position: fixed;
             top: 0;
@@ -216,7 +204,7 @@
             background: #F2F2F7;
             box-shadow: 5px 0 25px rgba(0,0,0,0.15);
             z-index: 100;
-            transition: left 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            transition: left 0.3s ease;
             padding: 20px 16px;
             overflow-y: auto;
         }
@@ -254,30 +242,23 @@
             font-weight: 600;
             margin: 16px 0 6px 8px;
         }
-
-        @keyframes slideDown {
-            from { transform: translateY(-10px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
     </style>
 </head>
 <body>
 
     <div class="panel-overlay" id="overlay"></div>
 
-    <!-- Admin Panel (Sozlamalar + Qarz Boshqaruvi) -->
     <div class="side-settings-panel" id="settingsPanel">
         <div class="panel-header">
             <h2>⚙️ Admin Panel</h2>
             <button style="color:#007AFF; background:none; border:none; font-size:16px; font-weight:600; cursor:pointer;" id="closePanel">Tayyor</button>
         </div>
 
-        <!-- TEPADAGI QARZ BILDIRISHNOMASI -->
-        <div class="ios-debt-alert" id="panelDebtAlert">
-            <p>⚠️ Qarzlar mavjud!</p>
+        <div class="ios-debt-alert" id="panelDebtAlert" style="background:#FF453A;">
+            <p style="color:#FFFFFF;">⚠️ Faol qarzlar aniqlandi!</p>
         </div>
         
-        <div class="section-title">Material Narxlari (1 m²)</div>
+        <div class="section-title">Material Narxlari (1 m² uchun)</div>
         <div class="ios-form-group">
             <div class="ios-input-row">
                 <label>Banner</label>
@@ -292,9 +273,9 @@
                 <input type="number" id="price-setka" placeholder="40000">
             </div>
         </div>
-        <button class="ios-btn-primary" id="savePricesBtn" style="padding:12px; font-size:15px; margin-bottom:10px;">Narxlarni Saqlash</button>
+        <button class="ios-btn-primary" id="savePricesBtn" style="padding:12px; font-size:15px; margin-bottom:15px;">Narxlarni Saqlash</button>
 
-        <div class="section-title">Yangi Qarz Qo'shish</div>
+        <div class="section-title">Alohida Qarz Qo'shish</div>
         <div class="ios-form-group">
             <div class="ios-input-row">
                 <label>Mijoz ismi</label>
@@ -308,18 +289,15 @@
         <button class="ios-btn-primary" id="saveDebtBtn" style="padding:12px; font-size:15px; background:#FF3B30;">Qarzni Yuklash</button>
     </div>
 
-    <!-- Asosiy Interfeys -->
     <div class="ios-header">
         <h1>Buyurtma</h1>
         <button class="settings-btn" id="openPanel">⚙️</button>
     </div>
 
-    <!-- ASOSIY EKRANDAGI BILDIRISHNOMA -->
     <div class="ios-debt-alert" id="mainDebtAlert">
-        <p id="mainDebtText">⚠️ Diqqat: Tizimda to'lanmagan qarzlar bor!</p>
+        <p id="mainDebtText">⚠️ Diqqat: Tizimda to'lanmagan qarzlar mavjud!</p>
     </div>
 
-    <!-- Statistika Vidjetlari -->
     <div class="stats-container">
         <div class="stat-card">
             <div class="title">Banner</div>
@@ -335,14 +313,12 @@
         </div>
     </div>
 
-    <!-- Material Tanlash -->
     <div class="segmented-control">
         <button class="segment-item active" data-material="banner">Banner</button>
         <button class="segment-item" data-material="arakal">Arakal</button>
         <button class="segment-item" data-material="setka">Setka</button>
     </div>
 
-    <!-- O'lcham kiritish -->
     <div class="ios-form-group">
         <div class="ios-input-row">
             <label>Mijoz ismi</label>
@@ -357,10 +333,10 @@
             <input type="number" id="input-boyi" placeholder="0" inputmode="numeric">
         </div>
         <div class="ios-input-row">
-            <label>Holati</label>
+            <label>Turi</label>
             <select id="input-status">
                 <option value="To'landi">To'landi</option>
-                <option value="Qarz">Qarz yozish</option>
+                <option value="Qarz">Qarzga yozish</option>
             </select>
         </div>
     </div>
@@ -372,16 +348,17 @@
     <button class="ios-btn-primary" id="submitOrderBtn">Buyurtmani Yuklash</button>
 
     <script>
-        // --- TO'LIQ VA TO'G'RI SUPABASE SOZLAMALARI ---
+        // Supabase ulanish sozlamalari
         const SUPABASE_URL = "https://gsddtlnpuwqjyadovshp.supabase.co";
         const SUPABASE_ANON_KEY = "sb_publishable_ZxsMtYclbSrGigXep40XYQ_g0OJG9rE";
         
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // Supabase obyektini to'g'ri yaratish (Xatolik tuzatildi)
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         let dbPrices = { banner: 30000, arakal: 35000, setka: 40000 };
         let activeMaterial = "banner";
 
-        // DOM Elementlari
+        // Elementlar
         const panel = document.getElementById('settingsPanel');
         const overlay = document.getElementById('overlay');
         const eniInput = document.getElementById('input-eni');
@@ -390,31 +367,22 @@
         const statusSelect = document.getElementById('input-status');
         const quickResult = document.getElementById('quickResult');
 
-        // Navigatsiya ochish va yopish
-        function openSettings() {
+        // Faqat tugmalar orqali navigatsiya (Swipe butunlay olib tashlandi)
+        document.getElementById('openPanel').addEventListener('click', () => {
             panel.classList.add('open');
             overlay.classList.add('show');
-            checkDebts(); // Admin panel ochilganda qarzlarni qayta tekshirish
-        }
+            checkDebts();
+        });
 
-        function closeSettings() {
+        function closePanel() {
             panel.classList.remove('open');
             overlay.classList.remove('show');
         }
 
-        document.getElementById('openPanel').addEventListener('click', openSettings);
-        document.getElementById('closePanel').addEventListener('click', closeSettings);
-        overlay.addEventListener('click', closeSettings);
+        document.getElementById('closePanel').addEventListener('click', closePanel);
+        overlay.addEventListener('click', closePanel);
 
-        // Telefonda mobil surish (Swipe Gesture)
-        let touchStartX = 0;
-        document.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; });
-        document.addEventListener('touchend', e => {
-            let touchEndX = e.changedTouches[0].screenX;
-            if (touchStartX < 50 && (touchEndX - touchStartX) > 80) { openSettings(); }
-        });
-
-        // Segmented Control material almashtirish
+        // Material almashtirish tugmalari
         document.querySelectorAll('.segment-item').forEach(btn => {
             btn.addEventListener('click', function() {
                 document.querySelectorAll('.segment-item').forEach(b => b.classList.remove('active'));
@@ -424,7 +392,7 @@
             });
         });
 
-        // Sof m² va tezkor hisob
+        // Real vaqt rejimida avtomatik m² hisoblash
         function calculateQuick() {
             const eni = parseFloat(eniInput.value) || 0;
             const boy = parseFloat(boyiInput.value) || 0;
@@ -442,34 +410,32 @@
         eniInput.addEventListener('input', calculateQuick);
         boyiInput.addEventListener('input', calculateQuick);
 
-        // QARZLARNI TEKSHIRISH VA BILDIRIShNOMA CHIQARISh MANTIQI
+        // Qarzlar mavjudligini tekshirish va eslatish mantiqi
         async function checkDebts() {
             try {
-                let { data, error } = await supabase.from('debts').select('amount').eq('status', 'To\'lanmagan');
+                let { data, error } = await supabaseClient.from('debts').select('amount').eq('status', 'To\'lanmagan');
                 if (!error && data) {
                     let totalDebtSum = data.reduce((sum, item) => sum + item.amount, 0);
                     
                     if (totalDebtSum > 0) {
-                        // Asosiy ekrandagi eslatma matni
                         document.getElementById('mainDebtAlert').style.display = 'flex';
-                        document.getElementById('mainDebtText').innerText = `⚠️ Diqqat: Tizimda ${totalDebtSum.toLocaleString()} so'm faol qarz bor!`;
+                        document.getElementById('mainDebtText').innerText = `⚠️ Diqqat: Tizimda ${totalDebtSum.toLocaleString()} so'm to'lanmagan qarz bor!`;
                         
-                        // Admin paneldagi ichki bildirishnoma
                         const panelAlert = document.getElementById('panelDebtAlert');
-                        panelAlert.style.display = 'flex';
-                        panelAlert.innerHTML = `<p>🔴 Jami faol qarz miqdori: <b>${totalDebtSum.toLocaleString()} so'm</b></p>`;
+                        panelAlert.style.style.display = 'flex';
+                        panelAlert.innerHTML = `<p style="color:#FFF;">🔴 Admin Diqqatiga: Jami qarz miqdori <b>${totalDebtSum.toLocaleString()} so'm</b></p>`;
                     } else {
                         document.getElementById('mainDebtAlert').style.display = 'none';
                         document.getElementById('panelDebtAlert').style.display = 'none';
                     }
                 }
-            } catch (err) { console.log(err); }
+            } catch (err) { console.log("Qarz xatosi:", err); }
         }
 
-        // Narxlarni yuklash
+        // Amaldagi narxlarni bazadan tortib olish
         async function fetchPrices() {
             try {
-                let { data, error } = await supabase.from('material_prices').select('*');
+                let { data, error } = await supabaseClient.from('material_prices').select('*');
                 if (!error && data && data.length > 0) {
                     data.forEach(item => {
                         dbPrices[item.material_name] = item.price;
@@ -480,44 +446,44 @@
             } catch (err) { console.log(err); }
         }
 
-        // Narxlarni saqlash
+        // Admin narxlarni saqlashi
         document.getElementById('savePricesBtn').addEventListener('click', async () => {
             const materials = ['banner', 'arakal', 'setka'];
             for (const mat of materials) {
                 const inputVal = parseFloat(document.getElementById(`price-${mat}`).value);
                 if (inputVal > 0) {
                     dbPrices[mat] = inputVal;
-                    await supabase.from('material_prices').upsert({ material_name: mat, price: inputVal }, { onConflict: 'material_name' });
+                    await supabaseClient.from('material_prices').upsert({ material_name: mat, price: inputVal }, { onConflict: 'material_name' });
                 }
             }
-            alert("Narxlar muvaffaqiyatli saqlandi!");
-            closeSettings();
+            alert("Narxlar bazada yangilandi!");
+            closePanel();
             calculateQuick();
         });
 
-        // Mustaqil qarz kiritish paneli buyrug'i
+        // Mustaqil qarz kiritish
         document.getElementById('saveDebtBtn').addEventListener('click', async () => {
             const client = document.getElementById('debt-client').value.trim();
             const amount = parseFloat(document.getElementById('debt-amount').value) || 0;
 
             if (!client || amount <= 0) {
-                alert("Mijoz ismi va to'g'ri summani kiriting!");
+                alert("Mijoz ismi va summani kiriting!");
                 return;
             }
 
-            const { error } = await supabase.from('debts').insert([{ client_name: client, amount: amount }]);
+            const { error } = await supabaseClient.from('debts').insert([{ client_name: client, amount: amount }]);
             if (!error) {
-                alert("Qarz muvaffaqiyatli yuklandi!");
+                alert("Qarz yozildi!");
                 document.getElementById('debt-client').value = '';
                 document.getElementById('debt-amount').value = '';
                 checkDebts();
             }
         });
 
-        // Jami m² hisobotini yangilash
+        // Jami m² statistika vidjetlarini yangilash
         async function updateStats() {
             try {
-                let { data, error } = await supabase.from('orders').select('material, sqm');
+                let { data, error } = await supabaseClient.from('orders').select('material, sqm');
                 if (!error && data) {
                     let totals = { banner: 0, arakal: 0, setka: 0 };
                     data.forEach(order => { if (totals[order.material] !== undefined) totals[order.material] += order.sqm; });
@@ -528,7 +494,7 @@
             } catch (err) { console.log(err); }
         }
 
-        // Buyurtma yuklash va qarzni avtomat tekshirish mantiqi
+        // Buyurtmani bazaga yozish va qarz bo'lsa qarz jadvaliga avtomat qo'shish
         document.getElementById('submitOrderBtn').addEventListener('click', async () => {
             const eni = parseFloat(eniInput.value) || 0;
             const boy = parseFloat(boyiInput.value) || 0;
@@ -544,20 +510,20 @@
             const currentPrice = dbPrices[activeMaterial] || 0;
             const totalCost = sqm * currentPrice;
 
-            // 1. Buyurtmani bazaga yuklash
-            const { error: orderError } = await supabase.from('orders').insert([
+            // 1. Buyurtmani yuklash
+            const { error: orderError } = await supabaseClient.from('orders').insert([
                 { material: activeMaterial, width: eni, height: boy, sqm: sqm, total_price: Math.round(totalCost), client_name: client, status: status }
             ]);
 
-            // 2. Agar holat "Qarz" qilib tanlangan bo'lsa, qarzlar jadvaliga ham avtomat yozish
+            // 2. Agar "Qarzga yozish" tanlansa, debts jadvaliga ham yozadi
             if (status === "Qarz") {
-                await supabase.from('debts').insert([
-                    { client_name: client, amount: Math.round(totalCost), description: `${activeMaterial} uchun buyurtma` }
+                await supabaseClient.from('debts').insert([
+                    { client_name: client, amount: Math.round(totalCost), description: `${activeMaterial} o'lchamli buyurtma` }
                 ]);
             }
 
             if (!orderError) {
-                alert("Ma'lumotlar yuklandi! 🎉");
+                alert("Muvaffaqiyatli saqlandi! 🎉");
                 eniInput.value = '';
                 boyiInput.value = '';
                 clientInput.value = '';
@@ -565,11 +531,11 @@
                 updateStats();
                 checkDebts();
             } else {
-                alert("Xatolik: " + orderError.message);
+                alert("Bazaga yozishda xato: " + orderError.message);
             }
         });
 
-        // Dastlabki ishga tushirish buyruqlari
+        // Dasturni ilk ishga tushirish qadamlari
         fetchPrices();
         updateStats();
         checkDebts();

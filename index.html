@@ -3,6 +3,443 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Ziyo Dizayn ERP</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: #F2F2F7;
+            color: #1C1C1E;
+            padding: 16px;
+        }
+
+        .ios-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .ios-header h1 { font-size: 26px; font-weight: 700; }
+        .settings-btn { background: none; border: none; font-size: 26px; cursor: pointer; }
+
+        .ios-debt-alert {
+            background: #FFD60A;
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            display: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .segmented-control {
+            display: flex;
+            background: #E5E5EA;
+            border-radius: 9px;
+            padding: 2px;
+            margin-bottom: 20px;
+        }
+
+        .segment-item {
+            flex: 1;
+            background: none;
+            border: none;
+            padding: 9px 0;
+            font-size: 13px;
+            font-weight: 600;
+            color: #1C1C1E;
+            cursor: pointer;
+            border-radius: 7px;
+        }
+
+        .segment-item.active {
+            background: #FFFFFF;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.12);
+        }
+
+        .ios-form-group {
+            background: #FFFFFF;
+            border-radius: 14px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .ios-input-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 16px;
+            border-bottom: 0.5px solid #E5E5EA;
+        }
+
+        .ios-input-row:last-child { border-bottom: none; }
+        .ios-input-row label { font-size: 16px; font-weight: 500; }
+        .ios-input-row input, .ios-input-row select {
+            border: none; outline: none; font-size: 16px; color: #007AFF; text-align: right; width: 55%; background: transparent;
+        }
+
+        .quick-result-box {
+            background: #E4F2FF; border-radius: 14px; padding: 16px; text-align: center; margin-bottom: 20px; border: 1px solid #B4D7FF;
+        }
+        .quick-result-box p { font-size: 15px; font-weight: 600; color: #007AFF; }
+
+        .ios-btn-primary {
+            background: #007AFF; color: #FFFFFF; border: none; border-radius: 14px; padding: 16px; font-size: 17px; font-weight: 600; width: 100%; cursor: pointer;
+        }
+        .ios-btn-primary:active { background: #0063CC; }
+
+        /* Full Screen Panels */
+        .full-panel {
+            position: fixed; top: 0; left: -100%; width: 100%; height: 100%; background: #F2F2F7; z-index: 100; transition: left 0.3s ease; padding: 16px; overflow-y: auto;
+        }
+        .full-panel.open { left: 0; }
+        .panel-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+
+        .admin-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
+        .admin-card { background: #FFF; padding: 12px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+        .admin-card h4 { font-size: 12px; color: #8E8E93; text-transform: uppercase; }
+        .admin-card p { font-size: 18px; font-weight: 700; color: #1C1C1E; margin-top: 4px; }
+
+        .list-item { background: #FFF; padding: 12px 16px; border-bottom: 0.5px solid #E5E5EA; display: flex; justify-content: space-between; }
+        .list-item:last-child { border-bottom: none; }
+    </style>
+</head>
+<body>
+
+    <div id="workerPage">
+        <div class="ios-header">
+            <h1>Ziyo Ishchi</h1>
+            <button class="settings-btn" id="btnOpenMenu">⚙️</button>
+        </div>
+
+        <div class="ios-debt-alert" id="workerDebtAlert">
+            <p>⚠️ Diqqat: Tizimda to'lanmagan qarzlar bor!</p>
+        </div>
+
+        <div class="segmented-control">
+            <button class="segment-item active" data-material="banner">Banner</button>
+            <button class="segment-item" data-material="arakal">Arakal</button>
+            <button class="segment-item" data-material="setka">Setka</button>
+        </div>
+
+        <div class="ios-form-group">
+            <div class="ios-input-row">
+                <label>Mijoz ismi</label>
+                <input type="text" id="order-client" placeholder="Ism kiriting">
+            </div>
+            <div class="ios-input-row">
+                <label>Eni (sm)</label>
+                <input type="number" id="order-width" placeholder="0" inputmode="numeric">
+            </div>
+            <div class="ios-input-row">
+                <label>Bo'yi (sm)</label>
+                <input type="number" id="order-height" placeholder="0" inputmode="numeric">
+            </div>
+            <div class="ios-input-row">
+                <label>To'lov turi</label>
+                <select id="order-payment">
+                    <option value="Naqd">Naqd pul</option>
+                    <option value="Click">Click o'tkazma</option>
+                    <option value="Qarz">Qarzga yozish</option>
+                </select>
+            </div>
+            <div class="ios-input-row">
+                <label>Mas'ul ishchi</label>
+                <select id="order-worker">
+                    <option value="Noma'lum">Tanlang...</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="quick-result-box" id="workerResult">
+            <p>O'lchamlarni kiriting...</p>
+        </div>
+
+        <button class="ios-btn-primary" id="btnSubmitOrder">Buyurtmani Saqlash</button>
+    </div>
+
+
+    <div class="full-panel" id="menuPanel">
+        <div class="panel-nav">
+            <h2>⚙️ Sozlamalar</h2>
+            <button id="btnCloseMenu" style="color:#007AFF; font-size:16px; font-weight:600; background:none; border:none;">Yopish</button>
+        </div>
+        <div class="ios-form-group">
+            <button class="ios-btn-primary" id="btnGoToAdmin" style="background:#34C759; border-radius:0;">🔐 Admin Panelga O'tish</button>
+        </div>
+    </div>
+
+
+    <div class="full-panel" id="adminPanel" style="background:#F2F2F7;">
+        <div class="panel-nav">
+            <h2>📊 Admin boshqaruvi</h2>
+            <button id="btnCloseAdmin" style="color:#FF3B30; font-size:16px; font-weight:600; background:none; border:none;">Chiqish</button>
+        </div>
+
+        <h3>💰 Kassa holati</h3>
+        <div class="admin-grid" style="margin-top:8px;">
+            <div class="admin-card"><h4 style="color:#34C759;">Naqd kassa</h4><p id="cash-naqd">0 UZS</p></div>
+            <div class="admin-card"><h4 style="color:#007AFF;">Click kassa</h4><p id="cash-click">0 UZS</p></div>
+            <div class="admin-card" style="grid-column: span 2;"><h4 style="color:#FF3B30;">Umumiy Faol Qarzlar</h4><p id="cash-qarz" style="color:#FF3B30;">0 UZS</p></div>
+        </div>
+
+        <h3>💸 Kassa operatsiyasi</h3>
+        <div class="ios-form-group" style="margin-top:8px;">
+            <div class="ios-input-row">
+                <label>Turi</label>
+                <select id="flow-type"><option value="Kirim">Kirim (+)</option><option value="Chiqim">Chiqim (-)</option></select>
+            </div>
+            <div class="ios-input-row">
+                <label>Summa</label>
+                <input type="number" id="flow-amount" placeholder="0">
+            </div>
+            <div class="ios-input-row">
+                <label>To'lov shakli</label>
+                <select id="flow-method"><option value="Naqd">Naqd</option><option value="Click">Click</option></select>
+            </div>
+            <div class="ios-input-row">
+                <label>Izoh</label>
+                <input type="text" id="flow-desc" placeholder="Xarajat sababi">
+            </div>
+        </div>
+        <button class="ios-btn-primary" id="btnSaveFlow" style="padding:12px; font-size:14px; margin-bottom:20px;">Kassaga yozish</button>
+
+        <h3>👥 Ishchilar boshqaruvi</h3>
+        <div class="ios-form-group" style="margin-top:8px;">
+            <div class="ios-input-row"><label>F.I.Sh</label><input type="text" id="new-worker-name" placeholder="Yangi ishchi ismi"></div>
+        </div>
+        <button class="ios-btn-primary" id="btnSaveWorker" style="padding:12px; font-size:14px; margin-bottom:20px; background:#5856D6;">Ishchi qo'shish</button>
+
+        <h3>⏳ Kutilayotgan buyurtmalar</h3>
+        <div class="ios-form-group" id="listPendingOrders" style="margin-top:8px;"></div>
+
+        <h3>📦 Topshirilgan buyurtmalar (Arxiv)</h3>
+        <div class="ios-form-group" id="listArchivedOrders" style="margin-top:8px;"></div>
+
+        <h3>🚨 Faol qarzlar ro'yxati</h3>
+        <div class="ios-form-group" id="listDebts" style="margin-top:8px;"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = "https://gsddtlnpuwqjyadovshp.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_ZxsMtYclbSrGigXep40XYQ_g0OJG9rE";
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let currentPrices = { banner: 30000, arakal: 35000, setka: 40000 };
+        let currentMaterial = "banner";
+
+        // Sahifa navigatsiyalari
+        document.getElementById('btnOpenMenu').addEventListener('click', () => document.getElementById('menuPanel').classList.add('open'));
+        document.getElementById('btnCloseMenu').addEventListener('click', () => document.getElementById('menuPanel').classList.remove('open'));
+        
+        document.getElementById('btnGoToAdmin').addEventListener('click', () => {
+            document.getElementById('menuPanel').classList.remove('open');
+            document.getElementById('adminPanel').classList.add('open');
+            loadAdminData();
+        });
+        document.getElementById('btnCloseAdmin').addEventListener('click', () => document.getElementById('adminPanel').classList.remove('open'));
+
+        // Material tanlash
+        document.querySelectorAll('.segment-item').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.segment-item').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                currentMaterial = this.getAttribute('data-material');
+                calcWorkerOrder();
+            });
+        });
+
+        function calcWorkerOrder() {
+            const w = parseFloat(document.getElementById('order-width').value) || 0;
+            const h = parseFloat(document.getElementById('order-height').value) || 0;
+            if(w > 0 && h > 0) {
+                const sqm = (w * h) / 10000;
+                const cost = sqm * currentPrices[currentMaterial];
+                document.getElementById('workerResult').innerHTML = `<p>📐 <b>${sqm.toFixed(2)} m²</b> | 💰 <b>${Math.round(cost).toLocaleString()} UZS</b></p>`;
+            } else {
+                document.getElementById('workerResult').innerHTML = `<p>O'lchamlarni kiriting...</p>`;
+            }
+        }
+        document.getElementById('order-width').addEventListener('input', calcWorkerOrder);
+        document.getElementById('order-height').addEventListener('input', calcWorkerOrder);
+
+        // Ishchilarni yuklash (Select menyuga)
+        async function loadWorkersData() {
+            let { data } = await supabaseClient.from('employees').select('*');
+            const select = document.getElementById('order-worker');
+            select.innerHTML = '<option value="Noma\'lum">Tanlang...</option>';
+            if(data) {
+                data.forEach(emp => {
+                    select.innerHTML += `<option value="${emp.full_name}">${emp.full_name}</option>`;
+                });
+            }
+        }
+
+        // Qarzlar haqida umumiy xabarnoma
+        async function globalCheckDebts() {
+            let { data } = await supabaseClient.from('debts').select('amount').eq('status', 'To\'lanmagan');
+            if(data && data.length > 0) {
+                const total = data.reduce((s, i) => s + i.amount, 0);
+                if(total > 0) {
+                    document.getElementById('workerDebtAlert').style.display = 'flex';
+                    document.getElementById('workerDebtAlert').innerHTML = `<p>⚠️ Tizimda to'lanmagan <b>${total.toLocaleString()} UZS</b> qarz bor!</p>`;
+                    return;
+                }
+            }
+            document.getElementById('workerDebtAlert').style.display = 'none';
+        }
+
+        // Ishchi tomonidan buyurtma yuklash
+        document.getElementById('btnSubmitOrder').addEventListener('click', async () => {
+            const client = document.getElementById('order-client').value.trim() || "Noma'lum";
+            const w = parseFloat(document.getElementById('order-width').value) || 0;
+            const h = parseFloat(document.getElementById('order-height').value) || 0;
+            const pay = document.getElementById('order-payment').value;
+            const emp = document.getElementById('order-worker').value;
+
+            if(w <= 0 || h <= 0) { alert("O'lchamlarni kiriting!"); return; }
+
+            const sqm = (w * h) / 10000;
+            const total = Math.round(sqm * currentPrices[currentMaterial]);
+
+            // Buyurtmani yuklash
+            const { error } = await supabaseClient.from('orders').insert([{
+                client_name: client, material: currentMaterial, width: w, height: h, sqm: sqm, total_price: total, payment_method: pay, worker_name: emp
+            }]);
+
+            if(pay === 'Qarz') {
+                await supabaseClient.from('debts').insert([{ client_name: client, amount: total }]);
+            } else {
+                await supabaseClient.from('cash_flow').insert([{ type: 'Kirim', amount: total, payment_method: pay, description: `${client} buyurtmasi` }]);
+            }
+
+            if(!error) {
+                alert("Muvaffaqiyatli saqlandi! 🎉");
+                document.getElementById('order-client').value = '';
+                document.getElementById('order-width').value = '';
+                document.getElementById('order-height').value = '';
+                calcWorkerOrder();
+                globalCheckDebts();
+            }
+        });
+
+        // Admin yangi ishchi qo'shishi
+        document.getElementById('btnSaveWorker').addEventListener('click', async () => {
+            const name = document.getElementById('new-worker-name').value.trim();
+            if(!name) return;
+            await supabaseClient.from('employees').insert([{ full_name: name }]);
+            alert("Ishchi muvaffaqiyatli qo'shildi!");
+            document.getElementById('new-worker-name').value = '';
+            loadWorkersData();
+        });
+
+        // Admin kassa amaliyoti kiritishi
+        document.getElementById('btnSaveFlow').addEventListener('click', async () => {
+            const type = document.getElementById('flow-type').value;
+            const amt = parseFloat(document.getElementById('flow-amount').value) || 0;
+            const method = document.getElementById('flow-method').value;
+            const desc = document.getElementById('flow-desc').value.trim();
+
+            if(amt <= 0) return;
+            await supabaseClient.from('cash_flow').insert([{ type: type, amount: amt, payment_method: method, description: desc }]);
+            alert("Kassa yangilandi!");
+            document.getElementById('flow-amount').value = '';
+            document.getElementById('flow-desc').value = '';
+            loadAdminData();
+        });
+
+        // Olib ketish statusini yangilash
+        async function archiveOrder(id) {
+            await supabaseClient.from('orders').update({ status: 'Olib ketildi' }).eq('id', id);
+            loadAdminData();
+        }
+
+        // Qarzni to'langan deb belgilash
+        async function payDebt(id, client, amount) {
+            await supabaseClient.from('debts').update({ status: 'To\'landi' }).eq('id', id);
+            await supabaseClient.from('cash_flow').insert([{ type: 'Kirim', amount: amount, payment_method: 'Naqd', description: `${client} qarz to'lovi` }]);
+            loadAdminData();
+            globalCheckDebts();
+        }
+
+        // Admin panel barcha ma'lumotlarini yuklash va hisoblash
+        async function loadAdminData() {
+            // 1. Kassani hisoblash (Kirim va Chiqimlarni ayirish)
+            let { data: flows } = await supabaseClient.from('cash_flow').select('*');
+            let cashNaqd = 0, cashClick = 0;
+            if(flows) {
+                flows.forEach(f => {
+                    let sign = f.type === 'Kirim' ? 1 : -1;
+                    if(f.payment_method === 'Naqd') cashNaqd += (f.amount * sign);
+                    if(f.payment_method === 'Click') cashClick += (f.amount * sign);
+                });
+            }
+            document.getElementById('cash-naqd').innerText = `${cashNaqd.toLocaleString()} UZS`;
+            document.getElementById('cash-click').innerText = `${cashClick.toLocaleString()} UZS`;
+
+            // 2. Jami faol qarzlarni hisoblash
+            let { data: debts } = await supabaseClient.from('debts').select('*').eq('status', 'To\'lanmagan');
+            let totalDebts = debts ? debts.reduce((s, i) => s + i.amount, 0) : 0;
+            document.getElementById('cash-qarz').innerText = `${totalDebts.toLocaleString()} UZS`;
+
+            // 3. Kutilayotgan buyurtmalar ro'yxati
+            let { data: pOrders } = await supabaseClient.from('orders').select('*').eq('status', 'Kutilmoqda');
+            const pendingDiv = document.getElementById('listPendingOrders');
+            pendingDiv.innerHTML = pOrders && pOrders.length > 0 ? '' : '<p style="padding:15px; color:#8E8E93;">Kutilayotgan buyurtma yo'q</p>';
+            if(pOrders) {
+                pOrders.forEach(o => {
+                    pendingDiv.innerHTML += `<div class="list-item">
+                        <div><b>${o.client_name}</b><br><small>${o.material} | ${o.sqm.toFixed(2)} m² | ${o.payment_method}</small></div>
+                        <button onclick="archiveOrder(${o.id})" style="background:#007AFF; color:#FFF; border:none; padding:4px 8px; border-radius:6px; font-size:12px;">Topshirish</button>
+                    </div>`;
+                });
+            }
+
+            // 4. Olib ketilgan buyurtmalar ro'yxati
+            let { data: aOrders } = await supabaseClient.from('orders').select('*').eq('status', 'Olib ketildi');
+            const archivedDiv = document.getElementById('listArchivedOrders');
+            archivedDiv.innerHTML = aOrders && aOrders.length > 0 ? '' : '<p style="padding:15px; color:#8E8E93;">Arxiv bo'sh</p>';
+            if(aOrders) {
+                aOrders.forEach(o => {
+                    archivedDiv.innerHTML += `<div class="list-item" style="color:#8E8E93;">
+                        <div><b>${o.client_name}</b><br><small>${o.material} | ${o.sqm.toFixed(2)} m² | Topshirdi: ${o.worker_name}</small></div>
+                        <div>${o.total_price.toLocaleString()} UZS</div>
+                    </div>`;
+                });
+            }
+
+            // 5. Faol qarzlar ro'yxati (Tugmasi bilan)
+            const debtsDiv = document.getElementById('listDebts');
+            debtsDiv.innerHTML = debts && debts.length > 0 ? '' : '<p style="padding:15px; color:#8E8E93;">Faol qarzlar mavjud emas</p>';
+            if(debts) {
+                debts.forEach(d => {
+                    debtsDiv.innerHTML += `<div class="list-item">
+                        <div><b>${d.client_name}</b><br><small>Mijoz qarzi</small></div>
+                        <div style="text-align:right;"><span style="color:#FF3B30; font-weight:700;">${d.amount.toLocaleString()} UZS</span><br>
+                        <button onclick="payDebt(${d.id}, '${d.client_name}', ${d.amount})" style="background:#34C759; color:#FFF; border:none; padding:2px 6px; border-radius:4px; font-size:11px; margin-top:4px;">Yopish</button></div>
+                    </div>`;
+                });
+            }
+        }
+
+        // Tizim boshlanishi
+        loadWorkersData();
+        globalCheckDebts();
+    </script>
+</body>
+</html><!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Reklama Studio Premium</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>

@@ -35,11 +35,14 @@
         .ios-input-row label { font-size: 16px; font-weight: 500; color: #1C1C1E; }
         .ios-input-row input, .ios-input-row select { border: none; outline: none; font-size: 16px; color: #007AFF; text-align: right; width: 60%; background: transparent; }
 
-        .quick-result-box { background: #E4F2FF; border-radius: 14px; padding: 16px; text-align: center; margin-bottom: 20px; border: 1px solid #B4D7FF; }
+        .quick-result-box { background: #E4F2FF; border-radius: 14px; padding: 16px; text-align: center; margin-bottom: 12px; border: 1px solid #B4D7FF; }
         .quick-result-box p { font-size: 16px; font-weight: 600; color: #007AFF; }
 
         .ios-btn-primary { background: #007AFF; color: #FFFFFF; border: none; border-radius: 14px; padding: 16px; font-size: 17px; font-weight: 600; width: 100%; cursor: pointer; transition: 0.1s; }
         .ios-btn-primary:active { background: #0063CC; }
+        
+        .ios-btn-secondary { background: #E5E5EA; color: #007AFF; border: none; border-radius: 12px; padding: 12px; font-size: 15px; font-weight: 600; width: 100%; cursor: pointer; margin-bottom: 20px; transition: 0.1s; }
+        .ios-btn-secondary:active { background: #D1D1D6; }
 
         /* Modallar oqimi */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 100; display: none; justify-content: center; align-items: center; padding: 16px; backdrop-filter: blur(4px); }
@@ -79,12 +82,21 @@
     <div id="page-worker" class="page">
         <div class="ios-header">
             <div>
-                <h1 style="font-size: 24px;">Buyurtma kiritish</h1>
+                <h1 style="font-size: 24px;">Yangi Buyurtma</h1>
                 <p style="font-size: 12px; color:#8E8E93;">Xodim: <b id="lbl-worker-name" style="color:#007AFF;">...</b></p>
             </div>
             <button class="settings-btn" onclick="openSettings()">⚙️</button>
         </div>
 
+        <!-- Mijoz ma'lumotlari -->
+        <p style="font-size: 12px; color: #8E8E93; margin-bottom: 6px; margin-left: 6px;">MIJOZ MA'LUMOTLARI</p>
+        <div class="ios-form-group">
+            <div class="ios-input-row"><label>Mijoz ismi</label><input type="text" id="order-client" placeholder="Ism familiya"></div>
+            <div class="ios-input-row"><label>Telefon raqami</label><input type="tel" id="order-phone" placeholder="+998"></div>
+        </div>
+
+        <!-- Mahsulot qo'shish qismi -->
+        <p style="font-size: 12px; color: #8E8E93; margin-bottom: 6px; margin-left: 6px;">MAHSULOT PARAMETRLARI</p>
         <div class="segmented-control">
             <button class="segment-item active" data-material="banner">Banner</button>
             <button class="segment-item" data-material="arakal">Arakal</button>
@@ -92,22 +104,33 @@
         </div>
 
         <div class="ios-form-group">
-            <div class="ios-input-row"><label>Mijoz ismi</label><input type="text" id="order-client" placeholder="Ism familiya"></div>
-            <div class="ios-input-row"><label>Telefon raqami</label><input type="tel" id="order-phone" placeholder="+998"></div>
             <div class="ios-input-row"><label>Eni (sm)</label><input type="number" id="order-width" placeholder="0" inputmode="numeric"></div>
             <div class="ios-input-row"><label>Bo'yi (sm)</label><input type="number" id="order-height" placeholder="0" inputmode="numeric"></div>
-            <div class="ios-input-row">
-                <label>To'lov turi</label>
-                <select id="order-payment">
-                    <option value="Naqd">Naqd pul</option>
-                    <option value="Click">Click o'tkazma</option>
-                    <option value="Qarz">Qarzga yozish</option>
-                </select>
-            </div>
         </div>
 
         <div class="quick-result-box" id="workerResult"><p>O'lchamlarni kiriting...</p></div>
-        <button class="ios-btn-primary" onclick="prepareReceipt()">Buyurtma Saqlash</button>
+        <button class="ios-btn-secondary" onclick="addToCart()">➕ Ushbu mahsulotni savatga qo'shish</button>
+
+        <!-- Savat tarkibi -->
+        <h3>🛒 Savatdagi mahsulotlar ro'yxati</h3>
+        <div class="ios-form-group" id="cart-items-list" style="overflow: hidden; border: 1px solid #E5E5EA;">
+            <p style="padding:15px; color:#8E8E93; text-align:center;">Savat bo'sh. Mahsulot kiriting.</p>
+        </div>
+
+        <!-- Umumiy hisob displeyi -->
+        <div class="quick-result-box" style="background:#FFF; border-color:#E5E5EA;">
+            <p style="color:#1C1C1E; font-size:18px;">Umumiy Jami: <span id="cart-total-display" style="color:#007AFF; font-weight:bold;">0</span> UZS</p>
+        </div>
+
+        <!-- To'lov Taqsimoti Qismi (Siz so'ragan yangi joylar) -->
+        <p style="font-size: 12px; color: #8E8E93; margin-bottom: 6px; margin-left: 6px;">TO'LOV TAQSIMOTI (Kiritilayotgan summa)</p>
+        <div class="ios-form-group">
+            <div class="ios-input-row"><label>💵 Naqd to'lov</label><input type="number" id="pay-naqd" value="0" placeholder="0" oninput="calculateRemainingDebt()"></div>
+            <div class="ios-input-row"><label>💳 Click o'tkazma</label><input type="number" id="pay-click" value="0" placeholder="0" oninput="calculateRemainingDebt()"></div>
+            <div class="ios-input-row"><label style="color:#FF3B30;">🚨 Qarz (Nasiya)</label><input type="number" id="pay-qarz" value="0" placeholder="0" style="color:#FF3B30; font-weight:bold;"></div>
+        </div>
+
+        <button class="ios-btn-primary" onclick="prepareReceipt()">Buyurtmani Rasmiylashtirish</button>
     </div>
 
     <!-- ================= 3. SOZLAMALAR MODAL OYNASI ================= -->
@@ -130,7 +153,7 @@
         </div>
     </div>
 
-    <!-- ================= MODAL: ADMIN LOGIN OYNASI (PROMPT O'RNIGA) ================= -->
+    <!-- ================= MODAL: ADMIN LOGIN OYNASI ================= -->
     <div id="modal-admin-login" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
@@ -162,9 +185,11 @@
                 <div style="border-bottom:1px dashed #000; margin-bottom:10px;"></div>
                 <p style="margin-bottom:6px;"><b>Mijoz:</b> <span id="r-client">...</span></p>
                 <p style="margin-bottom:6px;"><b>Tel:</b> <span id="r-phone">...</span></p>
-                <p style="margin-bottom:6px;"><b>O'lchamlar:</b> <span id="r-dims">...</span></p>
-                <p style="margin-bottom:6px;"><b>Material:</b> <span id="r-mat">...</span></p>
-                <p style="margin-bottom:6px;"><b>To'lov turi:</b> <span id="r-pay">...</span></p>
+                <div style="border-bottom:1px dashed #000; margin:6px 0;"></div>
+                <p style="margin-bottom:4px;"><b>Buyurtmalar:</b></p>
+                <div id="r-dims" style="font-size:12px; padding-left:4px;">...</div>
+                <div style="border-bottom:1px dashed #000; margin:6px 0;"></div>
+                <p style="margin-bottom:6px;"><b>To'lov turi:</b> <br><span id="r-pay" style="font-size:12px; color:#007AFF;">...</span></p>
                 <p style="margin-bottom:6px;"><b>Qabul qildi:</b> <span id="r-worker">...</span></p>
                 <div style="border-bottom:1px dashed #000; margin-top:10px; margin-bottom:10px;"></div>
                 <p style="font-size:16px; text-align:right;"><b>JAMI: <span id="r-total">0</span> UZS</b></p>
@@ -234,8 +259,8 @@
         let currentPrices = { banner: 45000, arakal: 75000, setka: 85000 };
         let currentMaterial = "banner";
         let sessionUser = "";
+        let cart = []; // Savat massivi
 
-        // Tizim jurnali (Logs) funksiyasi (O'zgartirib/O'chirib bo'lmaydi)
         async function logAction(username, panel, action, details) {
             await supabaseClient.from('system_logs').insert([{
                 username: username, panel_type: panel, action_type: action, details: details
@@ -310,7 +335,7 @@
 
         function goToWorker() { showPage('page-worker'); }
 
-        // ================= ISHCHI FORMULYARI MANTIQI =================
+        // ================= ISHCHI PANEL SELECTION & SAVAT MANTIQLARI =================
         document.querySelectorAll('.segment-item').forEach(btn => {
             btn.addEventListener('click', function() {
                 document.querySelectorAll('.segment-item').forEach(b => b.classList.remove('active'));
@@ -335,6 +360,84 @@
         }
         document.getElementById('order-width').addEventListener('input', calcOrder);
         document.getElementById('order-height').addEventListener('input', calcOrder);
+
+        // Savatga qo'shish funksiyasi
+        function addToCart() {
+            const w = parseFloat(document.getElementById('order-width').value) || 0;
+            const h = parseFloat(document.getElementById('order-height').value) || 0;
+            
+            const res = calcOrder();
+            if(!res || w <= 0 || h <= 0) {
+                alert("Iltimos, mahsulot o'lchamlarini to'liq kiriting!");
+                return;
+            }
+
+            // Savatga yangi obyekt qo'shamiz
+            cart.push({
+                material: currentMaterial,
+                width: w,
+                height: h,
+                sqm: res.sqm,
+                total_price: res.total
+            });
+
+            // Inputlarni tozalaymiz
+            document.getElementById('order-width').value = '';
+            document.getElementById('order-height').value = '';
+            document.getElementById('workerResult').innerHTML = `<p>O'lchamlarni kiriting...</p>`;
+
+            renderCart();
+        }
+
+        // Savatni vizual chizish
+        function renderCart() {
+            const container = document.getElementById('cart-items-list');
+            container.innerHTML = '';
+            
+            let totalCartPrice = 0;
+
+            if(cart.length === 0) {
+                container.innerHTML = `<p style="padding:15px; color:#8E8E93; text-align:center;">Savat bo'sh. Mahsulot kiriting.</p>`;
+            } else {
+                cart.forEach((item, index) => {
+                    totalCartPrice += item.total_price;
+                    container.innerHTML += `
+                        <div class="list-item">
+                            <div>
+                                <b style="color:#007AFF;">${item.material.toUpperCase()}</b> 
+                                <small style="color:#1C1C1E;">(${item.width} x ${item.height} sm)</small><br>
+                                <small style="color:#8E8E93;">Yuzasi: ${item.sqm.toFixed(2)} m²</small>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:12px;">
+                                <span style="font-weight:700;">${item.total_price.toLocaleString()} UZS</span>
+                                <button onclick="removeFromCart(${index})" style="background:none; border:none; color:#FF3B30; font-size:18px; font-weight:bold; cursor:pointer;">✕</button>
+                            </div>
+                        </div>`;
+                });
+            }
+
+            document.getElementById('cart-total-display').innerText = totalCartPrice.toLocaleString();
+            
+            // Defolt holatda hamma summani naqdga tashlab qo'yamiz (ishchi o'zi o'zgartira oladi)
+            document.getElementById('pay-naqd').value = totalCartPrice;
+            document.getElementById('pay-click').value = 0;
+            document.getElementById('pay-qarz').value = 0;
+        }
+
+        function removeFromCart(index) {
+            cart.splice(index, 1);
+            renderCart();
+        }
+
+        // To'lov kiritilganda qarzni avtomat hisoblash
+        function calculateRemainingDebt() {
+            let totalCartPrice = cart.reduce((sum, item) => sum + item.total_price, 0);
+            let naqd = parseFloat(document.getElementById('pay-naqd').value) || 0;
+            let click = parseFloat(document.getElementById('pay-click').value) || 0;
+            
+            let qarz = totalCartPrice - naqd - click;
+            document.getElementById('pay-qarz').value = qarz >= 0 ? qarz : 0;
+        }
 
         async function fetchPrices() {
             let { data } = await supabaseClient.from('material_prices').select('*');
@@ -362,59 +465,110 @@
         }
 
         // ================= CHEK VERIFIKATSIYASI =================
-        let pendingOrderObject = null;
-
         function prepareReceipt() {
+            if(cart.length === 0) {
+                alert("Savat bo'sh! Kamida bitta mahsulot qo'shing.");
+                return;
+            }
+
             const client = document.getElementById('order-client').value.trim() || "Noma'lum";
             const phone = document.getElementById('order-phone').value.trim() || "Kiritilmagan";
-            const w = parseFloat(document.getElementById('order-width').value) || 0;
-            const h = parseFloat(document.getElementById('order-height').value) || 0;
-            const pay = document.getElementById('order-payment').value;
+            
+            const naqd = parseFloat(document.getElementById('pay-naqd').value) || 0;
+            const click = parseFloat(document.getElementById('pay-click').value) || 0;
+            const qarz = parseFloat(document.getElementById('pay-qarz').value) || 0;
 
-            const res = calcOrder();
-            if(!res || w <= 0 || h <= 0) { alert("Iltimos o'lchamlarni to'liq kiriting!"); return; }
-
-            pendingOrderObject = { client, phone, w, h, pay, sqm: res.sqm, total: res.total, material: currentMaterial };
+            let totalCartPrice = cart.reduce((sum, item) => sum + item.total_price, 0);
+            
+            if((naqd + click + qarz) !== totalCartPrice) {
+                alert("Xatolik: Kiritilgan to'lovlar yig'indisi (Naqd + Click + Qarz) umumiy jami summaga teng emas!");
+                return;
+            }
 
             document.getElementById('receipt-date').innerText = "Sana: " + new Date().toLocaleString('uz-UZ');
             document.getElementById('r-client').innerText = client;
             document.getElementById('r-phone').innerText = phone;
-            document.getElementById('r-dims').innerText = `${w} x ${h} sm (${res.sqm.toFixed(2)} m²)`;
-            document.getElementById('r-mat').innerText = currentMaterial.toUpperCase();
-            document.getElementById('r-pay').innerText = pay;
             document.getElementById('r-worker').innerText = sessionUser;
-            document.getElementById('r-total').innerText = res.total.toLocaleString();
+
+            // Chek ichidagi mahsulotlar ro'yxati
+            let receiptItemsHtml = '';
+            cart.forEach((item, idx) => {
+                receiptItemsHtml += `<p style="margin-bottom:4px;">${idx+1}. ${item.material.toUpperCase()} (${item.width}x${item.height} sm) - <b>${item.total_price.toLocaleString()} UZS</b></p>`;
+            });
+            document.getElementById('r-dims').innerHTML = receiptItemsHtml;
+
+            // To'lov turlari taqsimoti
+            document.getElementById('r-pay').innerHTML = `
+                Naqd: ${naqd.toLocaleString()} UZS <br>
+                Click: ${click.toLocaleString()} UZS <br>
+                Qarz: ${qarz.toLocaleString()} UZS
+            `;
+            document.getElementById('r-total').innerText = totalCartPrice.toLocaleString();
 
             document.getElementById('modal-receipt').classList.add('show');
         }
 
         function closeReceipt() { document.getElementById('modal-receipt').classList.remove('show'); }
 
+        // Ma'lumotlar bazasiga yakuniy saqlash
         async function submitOrderFinal() {
-            if(!pendingOrderObject) return;
-            const p = pendingOrderObject;
+            if(cart.length === 0) return;
 
-            const { error } = await supabaseClient.from('orders').insert([{
-                client_name: p.client, material: p.material, width: p.w, height: p.h, sqm: p.sqm, total_price: p.total, payment_method: p.pay, worker_name: sessionUser
-            }]);
+            const client = document.getElementById('order-client').value.trim() || "Noma'lum";
+            const phone = document.getElementById('order-phone').value.trim() || "Kiritilmagan";
+            
+            const naqd = parseFloat(document.getElementById('pay-naqd').value) || 0;
+            const click = parseFloat(document.getElementById('pay-click').value) || 0;
+            const qarz = parseFloat(document.getElementById('pay-qarz').value) || 0;
+            
+            let totalCartPrice = cart.reduce((sum, item) => sum + item.total_price, 0);
 
-            if(p.pay === 'Qarz') {
-                await supabaseClient.from('debts').insert([{ client_name: `${p.client} (${p.phone})`, amount: p.total }]);
-            } else {
-                await supabaseClient.from('cash_flow').insert([{ type: 'Kirim', amount: p.total, payment_method: p.pay, description: `${p.client} buyurtmasi` }]);
+            // 1. Har bitta mahsulotni alohida buyurtma sifatida orders jadvaliga yuklaymiz
+            // To'lov miqdorlarini mahsulot tannarxiga qarab foizli taqsimlaymiz (Admin panel adashmasligi uchun)
+            for(let i=0; i < cart.length; i++) {
+                const item = cart[i];
+                const prop = totalCartPrice > 0 ? (item.total_price / totalCartPrice) : 0;
+                
+                const itemNaqd = Math.round(naqd * prop);
+                const itemClick = Math.round(click * prop);
+                const itemQarz = Math.round(qarz * prop);
+
+                // Maxsus formatlangan string: "Aralash: N=50000, C=10000, Q=0"
+                const splitPayString = `Aralash: N=${itemNaqd}, C=${itemClick}, Q=${itemQarz}`;
+
+                await supabaseClient.from('orders').insert([{
+                    client_name: client, 
+                    material: item.material, 
+                    width: item.width, 
+                    height: item.height, 
+                    sqm: item.sqm, 
+                    total_price: item.total_price, 
+                    payment_method: splitPayString, 
+                    worker_name: sessionUser
+                }]);
             }
 
-            await logAction(sessionUser, "Ishchi", "Buyurtma saqlash", `Mijoz: ${p.client}, Tel: ${p.phone}, Summa: ${p.total} UZS, To'lov: ${p.pay}`);
-
-            if(!error) {
-                alert("Buyurtma muvaffaqiyatli saqlandi! 🎉");
-                document.getElementById('order-client').value = '';
-                document.getElementById('order-phone').value = '';
-                document.getElementById('order-width').value = '';
-                document.getElementById('order-height').value = '';
-                calcOrder();
-                closeReceipt();
+            // 2. Kassaga umumiy tranzaksiyani yozamiz
+            if(naqd > 0) {
+                await supabaseClient.from('cash_flow').insert([{ type: 'Kirim', amount: naqd, payment_method: 'Naqd', description: `${client} savatli buyurtmasi` }]);
             }
+            if(click > 0) {
+                await supabaseClient.from('cash_flow').insert([{ type: 'Kirim', amount: click, payment_method: 'Click', description: `${client} savatli buyurtmasi` }]);
+            }
+            if(qarz > 0) {
+                await supabaseClient.from('debts').insert([{ client_name: `${client} (${phone})`, amount: qarz }]);
+            }
+
+            await logAction(sessionUser, "Ishchi", "Savat saqlandi", `Mijoz: ${client}, Jami: ${totalCartPrice} UZS (Naqd:${naqd}, Click:${click}, Qarz:${qarz})`);
+
+            alert("Savatdagi barcha buyurtmalar muvaffaqiyatli saqlandi! 🎉");
+            
+            // Tozalash
+            cart = [];
+            document.getElementById('order-client').value = '';
+            document.getElementById('order-phone').value = '';
+            renderCart();
+            closeReceipt();
         }
 
         // ================= ADMIN DASHBOARD TIZIMI =================
@@ -486,9 +640,24 @@
                     }
                     workerMetrics[o.worker_name].count += 1;
                     workerMetrics[o.worker_name].total += o.total_price;
-                    if(o.payment_method === 'Naqd') workerMetrics[o.worker_name].naqd += o.total_price;
-                    if(o.payment_method === 'Click') workerMetrics[o.worker_name].click += o.total_price;
-                    if(o.payment_method === 'Qarz') workerMetrics[o.worker_name].qarz += o.total_price;
+                    
+                    // Natijalarni aniqlash: ham eski oddiy yozuvlarni, ham yangi aralash formatni qo'llab-quvvatlaydi
+                    let orderNaqd = 0, orderClick = 0, orderQarz = 0;
+                    if(o.payment_method === 'Naqd') orderNaqd = o.total_price;
+                    else if(o.payment_method === 'Click') orderClick = o.total_price;
+                    else if(o.payment_method === 'Qarz') orderQarz = o.total_price;
+                    else if(o.payment_method && o.payment_method.startsWith('Aralash:')) {
+                        const parts = o.payment_method.replace('Aralash: ', '').split(', ');
+                        parts.forEach(p => {
+                            if(p.startsWith('N=')) orderNaqd = parseFloat(p.split('=')[1]) || 0;
+                            if(p.startsWith('C=')) orderClick = parseFloat(p.split('=')[1]) || 0;
+                            if(p.startsWith('Q=')) orderQarz = parseFloat(p.split('=')[1]) || 0;
+                        });
+                    }
+
+                    workerMetrics[o.worker_name].naqd += orderNaqd;
+                    workerMetrics[o.worker_name].click += orderClick;
+                    workerMetrics[o.worker_name].qarz += orderQarz;
                 });
 
                 Object.keys(workerMetrics).forEach(wName => {

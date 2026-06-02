@@ -122,12 +122,12 @@
             <p style="color:#1C1C1E; font-size:18px;">Umumiy Jami: <span id="cart-total-display" style="color:#007AFF; font-weight:bold;">0</span> UZS</p>
         </div>
 
-        <!-- To'lov Taqsimoti Qismi (Siz so'ragan yangi joylar) -->
+        <!-- To'lov Taqsimoti Qismi (Aqlli dinamik tizim) -->
         <p style="font-size: 12px; color: #8E8E93; margin-bottom: 6px; margin-left: 6px;">TO'LOV TAQSIMOTI (Kiritilayotgan summa)</p>
         <div class="ios-form-group">
-            <div class="ios-input-row"><label>💵 Naqd to'lov</label><input type="number" id="pay-naqd" value="0" placeholder="0" oninput="calculateRemainingDebt()"></div>
-            <div class="ios-input-row"><label>💳 Click o'tkazma</label><input type="number" id="pay-click" value="0" placeholder="0" oninput="calculateRemainingDebt()"></div>
-            <div class="ios-input-row"><label style="color:#FF3B30;">🚨 Qarz (Nasiya)</label><input type="number" id="pay-qarz" value="0" placeholder="0" style="color:#FF3B30; font-weight:bold;"></div>
+            <div class="ios-input-row"><label>💵 Naqd to'lov</label><input type="number" id="pay-naqd" value="0" placeholder="0" oninput="calculateRemainingDebt('naqd')"></div>
+            <div class="ios-input-row"><label>💳 Click o'tkazma</label><input type="number" id="pay-click" value="0" placeholder="0" oninput="calculateRemainingDebt('click')"></div>
+            <div class="ios-input-row"><label style="color:#FF3B30;">🚨 Qarz (Nasiya)</label><input type="number" id="pay-qarz" value="0" placeholder="0" style="color:#FF3B30; font-weight:bold;" readonly></div>
         </div>
 
         <button class="ios-btn-primary" onclick="prepareReceipt()">Buyurtmani Rasmiylashtirish</button>
@@ -259,7 +259,7 @@
         let currentPrices = { banner: 45000, arakal: 75000, setka: 85000 };
         let currentMaterial = "banner";
         let sessionUser = "";
-        let cart = []; // Savat massivi
+        let cart = []; 
 
         async function logAction(username, panel, action, details) {
             await supabaseClient.from('system_logs').insert([{
@@ -335,7 +335,7 @@
 
         function goToWorker() { showPage('page-worker'); }
 
-        // ================= ISHCHI PANEL SELECTION & SAVAT MANTIQLARI =================
+        // ================= ISHCHI PANEL MANTIQLARI =================
         document.querySelectorAll('.segment-item').forEach(btn => {
             btn.addEventListener('click', function() {
                 document.querySelectorAll('.segment-item').forEach(b => b.classList.remove('active'));
@@ -361,7 +361,6 @@
         document.getElementById('order-width').addEventListener('input', calcOrder);
         document.getElementById('order-height').addEventListener('input', calcOrder);
 
-        // Savatga qo'shish funksiyasi
         function addToCart() {
             const w = parseFloat(document.getElementById('order-width').value) || 0;
             const h = parseFloat(document.getElementById('order-height').value) || 0;
@@ -372,7 +371,6 @@
                 return;
             }
 
-            // Savatga yangi obyekt qo'shamiz
             cart.push({
                 material: currentMaterial,
                 width: w,
@@ -381,7 +379,6 @@
                 total_price: res.total
             });
 
-            // Inputlarni tozalaymiz
             document.getElementById('order-width').value = '';
             document.getElementById('order-height').value = '';
             document.getElementById('workerResult').innerHTML = `<p>O'lchamlarni kiriting...</p>`;
@@ -389,7 +386,6 @@
             renderCart();
         }
 
-        // Savatni vizual chizish
         function renderCart() {
             const container = document.getElementById('cart-items-list');
             container.innerHTML = '';
@@ -418,7 +414,7 @@
 
             document.getElementById('cart-total-display').innerText = totalCartPrice.toLocaleString();
             
-            // Defolt holatda hamma summani naqdga tashlab qo'yamiz (ishchi o'zi o'zgartira oladi)
+            // Defolt holatda hamma summani naqd qatoriga yuklaymiz
             document.getElementById('pay-naqd').value = totalCartPrice;
             document.getElementById('pay-click').value = 0;
             document.getElementById('pay-qarz').value = 0;
@@ -429,14 +425,25 @@
             renderCart();
         }
 
-        // To'lov kiritilganda qarzni avtomat hisoblash
-        function calculateRemainingDebt() {
+        // AQLLI TO'LOV MANTIQI (Siz aytgan muammo to'liq tuzatildi)
+        function calculateRemainingDebt(field) {
             let totalCartPrice = cart.reduce((sum, item) => sum + item.total_price, 0);
             let naqd = parseFloat(document.getElementById('pay-naqd').value) || 0;
             let click = parseFloat(document.getElementById('pay-click').value) || 0;
-            
+
             let qarz = totalCartPrice - naqd - click;
-            document.getElementById('pay-qarz').value = qarz >= 0 ? qarz : 0;
+            
+            if (qarz < 0) {
+                // Agar kiritilgan summa jamidan oshib ketsa, qarama-qarshi maydonni avtomat hisoblaydi
+                if (field === 'click') {
+                    document.getElementById('pay-naqd').value = Math.max(0, totalCartPrice - click);
+                } else if (field === 'naqd') {
+                    document.getElementById('pay-click').value = Math.max(0, totalCartPrice - naqd);
+                }
+                qarz = 0;
+            }
+            
+            document.getElementById('pay-qarz').value = qarz;
         }
 
         async function fetchPrices() {
@@ -481,7 +488,7 @@
             let totalCartPrice = cart.reduce((sum, item) => sum + item.total_price, 0);
             
             if((naqd + click + qarz) !== totalCartPrice) {
-                alert("Xatolik: Kiritilgan to'lovlar yig'indisi (Naqd + Click + Qarz) umumiy jami summaga teng emas!");
+                alert("Xatolik: Kiritilgan to'lovlar yig'indisi umumiy jami summaga teng emas!");
                 return;
             }
 
@@ -490,14 +497,12 @@
             document.getElementById('r-phone').innerText = phone;
             document.getElementById('r-worker').innerText = sessionUser;
 
-            // Chek ichidagi mahsulotlar ro'yxati
             let receiptItemsHtml = '';
             cart.forEach((item, idx) => {
                 receiptItemsHtml += `<p style="margin-bottom:4px;">${idx+1}. ${item.material.toUpperCase()} (${item.width}x${item.height} sm) - <b>${item.total_price.toLocaleString()} UZS</b></p>`;
             });
             document.getElementById('r-dims').innerHTML = receiptItemsHtml;
 
-            // To'lov turlari taqsimoti
             document.getElementById('r-pay').innerHTML = `
                 Naqd: ${naqd.toLocaleString()} UZS <br>
                 Click: ${click.toLocaleString()} UZS <br>
@@ -510,7 +515,6 @@
 
         function closeReceipt() { document.getElementById('modal-receipt').classList.remove('show'); }
 
-        // Ma'lumotlar bazasiga yakuniy saqlash
         async function submitOrderFinal() {
             if(cart.length === 0) return;
 
@@ -523,8 +527,6 @@
             
             let totalCartPrice = cart.reduce((sum, item) => sum + item.total_price, 0);
 
-            // 1. Har bitta mahsulotni alohida buyurtma sifatida orders jadvaliga yuklaymiz
-            // To'lov miqdorlarini mahsulot tannarxiga qarab foizli taqsimlaymiz (Admin panel adashmasligi uchun)
             for(let i=0; i < cart.length; i++) {
                 const item = cart[i];
                 const prop = totalCartPrice > 0 ? (item.total_price / totalCartPrice) : 0;
@@ -533,7 +535,6 @@
                 const itemClick = Math.round(click * prop);
                 const itemQarz = Math.round(qarz * prop);
 
-                // Maxsus formatlangan string: "Aralash: N=50000, C=10000, Q=0"
                 const splitPayString = `Aralash: N=${itemNaqd}, C=${itemClick}, Q=${itemQarz}`;
 
                 await supabaseClient.from('orders').insert([{
@@ -548,7 +549,6 @@
                 }]);
             }
 
-            // 2. Kassaga umumiy tranzaksiyani yozamiz
             if(naqd > 0) {
                 await supabaseClient.from('cash_flow').insert([{ type: 'Kirim', amount: naqd, payment_method: 'Naqd', description: `${client} savatli buyurtmasi` }]);
             }
@@ -563,7 +563,6 @@
 
             alert("Savatdagi barcha buyurtmalar muvaffaqiyatli saqlandi! 🎉");
             
-            // Tozalash
             cart = [];
             document.getElementById('order-client').value = '';
             document.getElementById('order-phone').value = '';
@@ -641,7 +640,6 @@
                     workerMetrics[o.worker_name].count += 1;
                     workerMetrics[o.worker_name].total += o.total_price;
                     
-                    // Natijalarni aniqlash: ham eski oddiy yozuvlarni, ham yangi aralash formatni qo'llab-quvvatlaydi
                     let orderNaqd = 0, orderClick = 0, orderQarz = 0;
                     if(o.payment_method === 'Naqd') orderNaqd = o.total_price;
                     else if(o.payment_method === 'Click') orderClick = o.total_price;

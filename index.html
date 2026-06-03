@@ -512,7 +512,11 @@ function showPage(id) {
   document.getElementById(id)?.classList.add("active");
 }
 
+/* MODAL OCHISH VA YOPISH FUNKSIYALARI */
 function openSettings() { document.getElementById("modal-settings").classList.add("show"); }
+function openIncomeModal() { document.getElementById("modal-income").classList.add("show"); }
+// Mana shu ikki funksiya oldingi kodda tushib qolgan edi, hozir to'liq qo'shildi!
+function openExpenseModal() { document.getElementById("modal-expense").classList.add("show"); }
 function closeModal(id) { document.getElementById(id).classList.remove("show"); }
 
 // ═══ HISOBLASH VA SAVAT ═══
@@ -733,25 +737,56 @@ async function completeOrder(id) {
   loadAdminOrders();
 }
 
+// ═══ KASSA / KIRIM / CHIQIM TIYTIMI ═══
+function filterKassa(type, btn) {
+  kassaFilter = type;
+  loadKassa();
+}
+
 async function loadKassa() {
   const [flowRes, expRes] = await Promise.all([
     sb.from("cash_flow").select("*").order("created_at",{ascending:false}),
     sb.from("expenses").select("*").order("created_at",{ascending:false}),
   ]);
-  const flows = flowRes.data||[]; const exps = expRes.data||[];
-  let naqd=0,click=0,chiqim=0;
+  let flows = flowRes.data||[]; 
+  let exps = expRes.data||[];
+  
+  // Sana bo'yicha filterlash filtri
+  const now = new Date();
+  if (kassaFilter === "today") {
+    flows = flows.filter(f => new Date(f.created_at).toDateString() === now.toDateString());
+    exps = exps.filter(e => new Date(e.created_at).toDateString() === now.toDateString());
+  } else if (kassaFilter === "week") {
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    flows = flows.filter(f => new Date(f.created_at) >= sevenDaysAgo);
+    exps = exps.filter(e => new Date(e.created_at) >= sevenDaysAgo);
+  } else if (kassaFilter === "month") {
+    flows = flows.filter(f => { const d = new Date(f.created_at); return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth(); });
+    exps = exps.filter(e => { const d = new Date(e.created_at); return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth(); });
+  }
+
+  let naqd=0, click=0, chiqim=0;
   flows.forEach(f=>{ if(f.payment_method==="Naqd")naqd+=f.amount; if(f.payment_method==="Click")click+=f.amount; });
   exps.forEach(e=>chiqim+=e.amount);
   const kirim = naqd+click;
+  
   document.getElementById("kassa-stats").innerHTML = `
     <div class="stat-card card-border-green"><h4>📥 Kirim</h4><p style="color:#34C759">${fp(kirim)}</p></div>
     <div class="stat-card card-border-red"><h4>📤 Chiqim</h4><p style="color:#FF3B30">${fp(chiqim)}</p></div>
   `;
+  
   const all = [
     ...flows.map(f=>({date:f.created_at,label:`${f.payment_method==="Naqd"?"💵":"💳"} ${f.description}`,amount:f.amount,color:"#34C759",sign:"+"})),
-    ...exps.map(e=>({date:e.created_at,label:`📤 ${e.category}`,note:e.note,amount:e.amount,color:"#FF3B30",sign:"-"})),
+    ...exps.map(e=>({date:e.created_at,label:`📤 ${e.category} (${e.note})`,amount:e.amount,color:#FF3B30",sign:"-"})),
   ].sort((a,b)=>new Date(b.date)-new Date(a.date));
-  document.getElementById("kassa-list").innerHTML = all.map(x=>`
+  
+  const listEl = document.getElementById("kassa-list");
+  if(!all.length) {
+    listEl.innerHTML = '<div class="empty-state"><div>💰</div>Kassada hech qanday harakat topilmadi</div>';
+    return;
+  }
+  
+  listEl.innerHTML = all.map(x=>`
     <div class="card" style="border-left:4px solid ${x.color}">
       <div style="display:flex;justify-content:space-between;align-items:center">
         <div><b>${x.label}</b><br><small>${new Date(x.date).toLocaleString("uz-UZ")}</small></div>
@@ -767,7 +802,9 @@ async function saveIncome() {
   if (!amount) return;
   const { error } = await sb.from("cash_flow").insert({type:"Kirim",amount,payment_method:method,description:note,worker_name:"Admin"});
   if (error) { alert("Kirim qo'shishda xatolik: " + error.message); return; }
-  closeModal("modal-income"); loadKassa();
+  document.getElementById("income-amount").value = "";
+  document.getElementById("income-note").value = "";
+  closeModal("modal-income"); loadKassa(); loadAdminData();
 }
 
 async function saveExpense() {
@@ -777,9 +814,12 @@ async function saveExpense() {
   if (!amount) return;
   const { error } = await sb.from("expenses").insert({amount,category:cat,note,worker_name:"Admin"});
   if (error) { alert("Chiqim qo'shishda xatolik: " + error.message); return; }
-  closeModal("modal-expense"); loadKassa();
+  document.getElementById("expense-amount").value = "";
+  document.getElementById("expense-note").value = "";
+  closeModal("modal-expense"); loadKassa(); loadAdminData();
 }
 
+// ═══ QARZLAR ═══
 async function loadDebts() {
   const { data, error } = await sb.from("debts").select("*").eq("status","Tolanmagan");
   if (error) { console.error("Qarzlarni yuklashda xatolik:", error.message); }
@@ -813,7 +853,7 @@ async function saveDebtPay() {
   if (uErr) { alert("Yangilashda xatolik: " + uErr.message); return; }
   
   await sb.from("cash_flow").insert({type:"Kirim",amount,payment_method:"Naqd",description:`${debt.client_name} qarz to'lovi`,worker_name:"Admin"});
-  closeModal("modal-debt-pay"); loadDebts(); loadKassa();
+  closeModal("modal-debt-pay"); loadDebts(); loadKassa(); loadAdminData();
 }
 
 async function doSearch() {
@@ -866,8 +906,7 @@ async function addWorker() {
   ]);
   
   if (error) {
-    alert("Supabase Xatoligi: " + error.message + "\n\nMaslahat: Supabase-da RLS policy yoqilgan bo'lishi mumkin yoki ustun nomi xato.");
-    console.error(error);
+    alert("Supabase Xatoligi: " + error.message);
     return;
   }
   

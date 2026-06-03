@@ -339,7 +339,7 @@ h3{font-size:13px;color:#8E8E93;text-transform:uppercase;margin:16px 0 10px;font
   </div>
 </div>
 
-<!-- MODALLAR (Kirim, Chiqim, Qarz) -->
+<!-- MODALLAR -->
 <div id="modal-income" class="modal-overlay">
   <div class="modal-box">
     <div class="modal-header"><h2>📥 Kirim Qo'shish</h2><button class="close-btn" onclick="closeModal('modal-income')">✕</button></div>
@@ -415,7 +415,8 @@ async function init() {
 }
 
 async function fetchPrices() {
-  const { data } = await sb.from("material_prices").select("*");
+  const { data, error } = await sb.from("material_prices").select("*");
+  if (error) { console.error("Narxlarni yuklashda xatolik:", error.message); }
   if (data) data.forEach(r => { prices[r.material_name] = r.price; });
   ["banner","arakal","setka"].forEach(k => {
     const el = document.getElementById("price-"+k); if (el) el.value = prices[k];
@@ -427,7 +428,6 @@ function updatePricesDisplay() {
   document.getElementById("prices-display").textContent = `Banner: ${fp(prices.banner)} | Arakal: ${fp(prices.arakal)} | Setka: ${fp(prices.setka)}`;
 }
 
-// LOGIN TABS (Ishchi / Admin)
 function switchLoginTab(type) {
   const wTab = document.getElementById("tab-btn-worker");
   const aTab = document.getElementById("tab-btn-admin");
@@ -444,7 +444,8 @@ function switchLoginTab(type) {
 }
 
 async function renderWorkerBtns() {
-  const { data } = await sb.from("employees").select("*").eq("role","worker");
+  const { data, error } = await sb.from("employees").select("*").eq("role","worker");
+  if (error) { console.error("Xodimlarni yuklashda xatolik:", error.message); }
   const workers = data || [];
   const container = document.getElementById("worker-btns");
   if(workers.length === 0) {
@@ -467,16 +468,18 @@ async function doWorkerLoginManual() {
   const pass = document.getElementById("worker-password").value;
   if (!login || !pass) { alert("Login va parolni kiriting!"); return; }
   
-  const { data } = await sb.from("employees").select("*").eq("login", login).eq("password", pass).single();
+  const { data, error } = await sb.from("employees").select("*").eq("login", login).eq("password", pass).single();
+  if (error) {
+    const msg = document.getElementById("worker-pass-msg");
+    msg.style.display = "block"; msg.style.color = "#FF3B30"; msg.textContent = "❌ Login yoki parol noto'g'ri!";
+    return;
+  }
   if (data) {
     sessionUser = data.full_name; isAdmin = false;
     localStorage.setItem("ziyo_user", JSON.stringify({name:sessionUser,isAdmin:false}));
     document.getElementById("worker-name-lbl").textContent = sessionUser;
     await logAction(sessionUser, "Tizim", "Kirish", `${sessionUser} tizimga kirdi`);
     showPage("page-worker"); updatePricesDisplay();
-  } else {
-    const msg = document.getElementById("worker-pass-msg");
-    msg.style.display = "block"; msg.style.color = "#FF3B30"; msg.textContent = "❌ Login yoki parol noto'g'ri!";
   }
 }
 
@@ -625,17 +628,18 @@ async function submitOrder() {
   try {
     for (const item of cart) {
       const ratio = total>0?(item.total/total):0;
-      await sb.from("orders").insert({
+      const { error } = await sb.from("orders").insert({
         client_name:client, client_phone:phone, material:item.material,
         width:item.width, height:item.height, billed_width:item.billedWidth,
         sqm:item.sqm, unit_price:item.unitPrice, total_price:item.total,
         payment_naqd:Math.round(naqd*ratio), payment_click:Math.round(click*ratio),
         payment_qarz:Math.round(qarz*ratio), worker_name:sessionUser, status:"Kutilmoqda"
       });
+      if (error) throw error;
     }
-    if (naqd>0) await sb.from("cash_flow").insert({type:"Kirim",amount:naqd,payment_method:"Naqd",description:`${client} buyurtmasi`,worker_name:sessionUser});
-    if (click>0) await sb.from("cash_flow").insert({type:"Kirim",amount:click,payment_method:"Click",description:`${client} buyurtmasi`,worker_name:sessionUser});
-    if (qarz>0) await sb.from("debts").insert({client_name:client,client_phone:phone,amount:qarz,status:"Tolanmagan"});
+    if (naqd>0) { const { error } = await sb.from("cash_flow").insert({type:"Kirim",amount:naqd,payment_method:"Naqd",description:`${client} buyurtmasi`,worker_name:sessionUser}); if (error) throw error; }
+    if (click>0) { const { error } = await sb.from("cash_flow").insert({type:"Kirim",amount:click,payment_method:"Click",description:`${client} buyurtmasi`,worker_name:sessionUser}); if (error) throw error; }
+    if (qarz>0) { const { error } = await sb.from("debts").insert({client_name:client,client_phone:phone,amount:qarz,status:"Tolanmagan"}); if (error) throw error; }
     await logAction(sessionUser,"Ishchi","Buyurtma",`${client}: ${fp(total)} UZS`);
     alert("✅ Buyurtma saqlandi!");
     cart=[]; document.getElementById("order-client").value=""; document.getElementById("order-phone").value="";
@@ -648,7 +652,11 @@ async function savePrices() {
   try {
     for (const k of ["banner","arakal","setka"]) {
       const val = parseInt(document.getElementById("price-"+k).value)||0;
-      if (val>0) { prices[k]=val; await sb.from("material_prices").upsert({material_name:k,price:val},{onConflict:"material_name"}); }
+      if (val>0) { 
+        prices[k]=val; 
+        const { error } = await sb.from("material_prices").upsert({material_name:k,price:val},{onConflict:"material_name"}); 
+        if (error) throw error;
+      }
     }
     alert("✅ Narxlar saqlandi!"); updatePricesDisplay(); closeModal("modal-settings");
   } catch(e) { alert("Xatolik: "+e.message); }
@@ -658,7 +666,11 @@ async function saveAdminPrices() {
   try {
     for (const k of ["banner","arakal","setka"]) {
       const val = parseInt(document.getElementById("admin-price-"+k).value)||0;
-      if (val>0) { prices[k]=val; await sb.from("material_prices").upsert({material_name:k,price:val},{onConflict:"material_name"}); }
+      if (val>0) { 
+        prices[k]=val; 
+        const { error } = await sb.from("material_prices").upsert({material_name:k,price:val},{onConflict:"material_name"}); 
+        if (error) throw error;
+      }
     }
     alert("✅ Narxlar saqlandi!");
   } catch(e) { alert("Xatolik: "+e.message); }
@@ -715,7 +727,8 @@ function loadAdminOrders() {
 }
 
 async function completeOrder(id) {
-  await sb.from("orders").update({status:"Olib ketildi"}).eq("id",id);
+  const { error } = await sb.from("orders").update({status:"Olib ketildi"}).eq("id",id);
+  if (error) { alert("Xatolik: " + error.message); return; }
   const o = allOrders.find(x=>x.id===id); if(o) o.status="Olib ketildi";
   loadAdminOrders();
 }
@@ -736,7 +749,7 @@ async function loadKassa() {
   `;
   const all = [
     ...flows.map(f=>({date:f.created_at,label:`${f.payment_method==="Naqd"?"💵":"💳"} ${f.description}`,amount:f.amount,color:"#34C759",sign:"+"})),
-    ...exps.map(e=>({date:e.created_at,label:`📤 ${e.category}`,note:e.note,amount:e.amount,color:"#FF3B30",sign:"-"})),
+    ...exps.map(e=>({date:e.created_at,label:`📤 ${e.category}`,note:e.note,amount:e.amount,color:#FF3B30",sign:"-"})),
   ].sort((a,b)=>new Date(b.date)-new Date(a.date));
   document.getElementById("kassa-list").innerHTML = all.map(x=>`
     <div class="card" style="border-left:4px solid ${x.color}">
@@ -747,15 +760,13 @@ async function loadKassa() {
     </div>`).join("");
 }
 
-function openIncomeModal() { document.getElementById("income-amount").value=""; document.getElementById("modal-income").classList.add("show"); }
-function openExpenseModal() { document.getElementById("expense-amount").value=""; document.getElementById("modal-expense").classList.add("show"); }
-
 async function saveIncome() {
   const amount = parseInt(document.getElementById("income-amount").value)||0;
   const method = document.getElementById("income-method").value;
   const note = document.getElementById("income-note").value||"Kirim";
   if (!amount) return;
-  await sb.from("cash_flow").insert({type:"Kirim",amount,payment_method:method,description:note,worker_name:"Admin"});
+  const { error } = await sb.from("cash_flow").insert({type:"Kirim",amount,payment_method:method,description:note,worker_name:"Admin"});
+  if (error) { alert("Kirim qo'shishda xatolik: " + error.message); return; }
   closeModal("modal-income"); loadKassa();
 }
 
@@ -764,12 +775,14 @@ async function saveExpense() {
   const cat = document.getElementById("expense-cat").value;
   const note = document.getElementById("expense-note").value||cat;
   if (!amount) return;
-  await sb.from("expenses").insert({amount,category:cat,note,worker_name:"Admin"});
+  const { error } = await sb.from("expenses").insert({amount,category:cat,note,worker_name:"Admin"});
+  if (error) { alert("Chiqim qo'shishda xatolik: " + error.message); return; }
   closeModal("modal-expense"); loadKassa();
 }
 
 async function loadDebts() {
-  const { data } = await sb.from("debts").select("*").eq("status","Tolanmagan");
+  const { data, error } = await sb.from("debts").select("*").eq("status","Tolanmagan");
+  if (error) { console.error("Qarzlarni yuklashda xatolik:", error.message); }
   const debts = data||[];
   document.getElementById("debts-list").innerHTML = debts.map(d=>`
     <div class="card card-border-red">
@@ -791,10 +804,14 @@ function openDebtPay(id, name, amount) {
 async function saveDebtPay() {
   const amount = parseInt(document.getElementById("debt-pay-amount").value)||0;
   if (!amount) return;
-  const { data: debt } = await sb.from("debts").select("*").eq("id",currentDebtId).single();
+  const { data: debt, error: fErr } = await sb.from("debts").select("*").eq("id",currentDebtId).single();
+  if (fErr) { alert("Xatolik: " + fErr.message); return; }
   const newPaid = (debt.paid_amount||0)+amount;
   const rem = Math.max(0, debt.amount-amount);
-  await sb.from("debts").update({paid_amount:newPaid,amount:rem,status:rem<=0?"Tolandi":"Tolanmagan"}).eq("id",currentDebtId);
+  
+  const { error: uErr } = await sb.from("debts").update({paid_amount:newPaid,amount:rem,status:rem<=0?"Tolandi":"Tolanmagan"}).eq("id",currentDebtId);
+  if (uErr) { alert("Yangilashda xatolik: " + uErr.message); return; }
+  
   await sb.from("cash_flow").insert({type:"Kirim",amount,payment_method:"Naqd",description:`${debt.client_name} qarz to'lovi`,worker_name:"Admin"});
   closeModal("modal-debt-pay"); loadDebts(); loadKassa();
 }
@@ -829,7 +846,8 @@ async function loadWorkerStats() {
 }
 
 async function loadWorkersList() {
-  const { data } = await sb.from("employees").select("*").eq("role","worker");
+  const { data, error } = await sb.from("employees").select("*").eq("role","worker");
+  if (error) { console.error("Xodimlarni yuklashda xatolik:", error.message); }
   document.getElementById("workers-list").innerHTML = (data||[]).map(w=>`
     <div class="card" style="display:flex;justify-content:space-between;align-items:center">
       <div><b>${w.full_name}</b> (Login: ${w.login})</div>
@@ -837,19 +855,36 @@ async function loadWorkersList() {
     </div>`).join("");
 }
 
+// 🛠️ ISHCHI QO'SHISH TUZATILGAN QISMI
 async function addWorker() {
-  const name=document.getElementById("new-w-name").value.trim();
-  const login=document.getElementById("new-w-login").value.trim();
-  const pass=document.getElementById("new-w-pass").value.trim();
-  if(!name||!login||!pass) return;
-  await sb.from("employees").insert({full_name:name,login,password:pass,role:"worker"});
-  document.getElementById("new-w-name").value=""; document.getElementById("new-w-login").value=""; document.getElementById("new-w-pass").value="";
-  await renderWorkerBtns(); loadWorkersList(); loadWorkerStats();
+  const name = document.getElementById("new-w-name").value.trim();
+  const login = document.getElementById("new-w-login").value.trim();
+  const pass = document.getElementById("new-w-pass").value.trim();
+  if(!name || !login || !pass) { alert("Iltimos barcha maydonlarni to'ldiring!"); return; }
+  
+  const { data, error } = await sb.from("employees").insert([
+    { full_name: name, login: login, password: pass, role: "worker" }
+  ]);
+  
+  if (error) {
+    alert("Supabase Xatoligi: " + error.message + "\n\nMaslahat: Supabase-da RLS policy yoqilgan bo'lishi mumkin yoki ustun nomi xato.");
+    console.error(error);
+    return;
+  }
+  
+  alert("✅ Yangi ishchi muvaffaqiyatli qo'shildi!");
+  document.getElementById("new-w-name").value=""; 
+  document.getElementById("new-w-login").value=""; 
+  document.getElementById("new-w-pass").value="";
+  await renderWorkerBtns(); 
+  loadWorkersList(); 
+  loadWorkerStats();
 }
 
 async function deleteWorker(id){
   if(!confirm("Ishchini o'chirishni tasdiqlaysizmi?"))return;
-  await sb.from("employees").delete().eq("id",id);
+  const { error } = await sb.from("employees").delete().eq("id",id);
+  if (error) { alert("O'chirishda xatolik: " + error.message); return; }
   await renderWorkerBtns(); loadWorkersList();
 }
 

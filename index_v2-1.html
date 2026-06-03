@@ -404,7 +404,7 @@ async function init() {
     sessionUser = u.name; isAdmin = u.isAdmin||false;
   }
   await fetchPrices();
-  await renderWorkerBtns();
+  renderWorkerBtns();
   initM2Selects();
   document.getElementById("loading-screen").style.display = "none";
   if (sessionUser) {
@@ -452,18 +452,16 @@ function selectWorker(name, login) {
 async function doLogin() {
   const pass = document.getElementById("login-pass").value;
   if (!selectedLogin) { alert("Avval profilingizni tanlang!"); return; }
-  const { data, error } = await sb.from("employees").select("*").eq("login", selectedLogin).eq("password", pass).single();
-  if (error) {
-    const msg = document.getElementById("pass-msg");
-    msg.style.display = "block"; msg.style.color = "#FF3B30"; msg.textContent = "❌ Parol noto'g'ri yoki xatolik!";
-    return;
-  }
+  const { data } = await sb.from("employees").select("*").eq("login", selectedLogin).eq("password", pass).single();
   if (data) {
     sessionUser = data.full_name; isAdmin = false;
     localStorage.setItem("ziyo_user", JSON.stringify({name:sessionUser,isAdmin:false}));
     document.getElementById("worker-name-lbl").textContent = sessionUser;
     await logAction(sessionUser, "Tizim", "Kirish", `${sessionUser} tizimga kirdi`);
     showPage("page-worker"); updatePricesDisplay();
+  } else {
+    const msg = document.getElementById("pass-msg");
+    msg.style.display = "block"; msg.style.color = "#FF3B30"; msg.textContent = "❌ Parol noto'g'ri!";
   }
 }
 
@@ -499,7 +497,7 @@ function showPage(id) {
 function openSettings() { document.getElementById("modal-settings").classList.add("show"); }
 function closeModal(id) { document.getElementById(id).classList.remove("show"); }
 
-// ═══ MATERIAL & HISOBLASH (CHEKLOVLAR OLIB TASHLA) ═══
+// ═══ MATERIAL & HISOBLASH ═══
 document.querySelectorAll(".seg-item").forEach(btn => {
   btn.addEventListener("click", function() {
     document.querySelectorAll(".seg-item").forEach(b => b.classList.remove("active"));
@@ -516,12 +514,9 @@ function calcOrder() {
   if (w>0 && h>0) {
     let bW = null;
     for (const r of ROLLS[curMat]) { if (r>=w){bW=r;break;} }
-    
-    // TAQIQLAR OLIB TASHLA: Agar kiritilgan en rulon o'lchamidan katta bo'lsa, xato bermaydi, kiritilgan enni o'zini hisoblaydi
-    if (!bW) {
-      bW = w; 
+    if (!bW) { 
+      bW = w; // Maksimal va noodatiy o'lchamdagi taqiqlar olib tashlandi, kiritilgan o'lcham bo'yicha hisoblaydi
     }
-    
     const sqm = (bW*h)/10000;
     const total = Math.round(sqm*prices[curMat]*qty);
     document.getElementById("calc-result").innerHTML =
@@ -609,7 +604,6 @@ function printReceipt() {
   w.document.close();
 }
 
-// ═══ SUPABASE INTEGRATSIYA (XATOLIKLARNI TO'LIQ ANIQLASH) ═══
 async function submitOrder() {
   if (!cart.length) return;
   const client = document.getElementById("order-client").value.trim()||"Noma'lum";
@@ -620,35 +614,23 @@ async function submitOrder() {
   const total = cart.reduce((s,i)=>s+i.total,0);
   try {
     for (const item of cart) {
-      const ratio = total > 0 ? (item.total / total) : 0;
-      const { error: ordErr } = await sb.from("orders").insert({
-        client_name: client, client_phone: phone, material: item.material,
-        width: item.width, height: item.height, billed_width: item.billedWidth,
-        sqm: item.sqm, unit_price: item.unitPrice, total_price: item.total,
-        payment_naqd: Math.round(naqd * ratio), payment_click: Math.round(click * ratio),
-        payment_qarz: Math.round(qarz * ratio), worker_name: sessionUser, status: "Kutilmoqda"
+      const ratio = total>0?(item.total/total):0;
+      await sb.from("orders").insert({
+        client_name:client, client_phone:phone, material:item.material,
+        width:item.width, height:item.height, billed_width:item.billedWidth,
+        sqm:item.sqm, unit_price:item.unitPrice, total_price:item.total,
+        payment_naqd:Math.round(naqd*ratio), payment_click:Math.round(click*ratio),
+        payment_qarz:Math.round(qarz*ratio), worker_name:sessionUser, status:"Kutilmoqda"
       });
-      if (ordErr) throw ordErr;
     }
-    if (naqd > 0) {
-      const { error: flErr } = await sb.from("cash_flow").insert({type: "Kirim", amount: naqd, payment_method: "Naqd", description: `${client} buyurtmasi`, worker_name: sessionUser});
-      if (flErr) throw flErr;
-    }
-    if (click > 0) {
-      const { error: flErr2 } = await sb.from("cash_flow").insert({type: "Kirim", amount: click, payment_method: "Click", description: `${client} buyurtmasi`, worker_name: sessionUser});
-      if (flErr2) throw flErr2;
-    }
-    if (qarz > 0) {
-      const { error: dbErr } = await sb.from("debts").insert({client_name: client, client_phone: phone, amount: qarz, status: "Tolanmagan"});
-      if (dbErr) throw dbErr;
-    }
-    await logAction(sessionUser, "Ishchi", "Buyurtma", `${client}: ${fp(total)} UZS (N:${fp(naqd)} C:${fp(click)} Q:${fp(qarz)})`);
-    alert("✅ Buyurtma muvaffaqiyatli saqlandi!");
-    cart = []; document.getElementById("order-client").value = ""; document.getElementById("order-phone").value = "";
+    if (naqd>0) await sb.from("cash_flow").insert({type:"Kirim",amount:naqd,payment_method:"Naqd",description:`${client} buyurtmasi`,worker_name:sessionUser});
+    if (click>0) await sb.from("cash_flow").insert({type:"Kirim",amount:click,payment_method:"Click",description:`${client} buyurtmasi`,worker_name:sessionUser});
+    if (qarz>0) await sb.from("debts").insert({client_name:client,client_phone:phone,amount:qarz,status:"Tolanmagan"});
+    await logAction(sessionUser,"Ishchi","Buyurtma",`${client}: ${fp(total)} UZS (N:${fp(naqd)} C:${fp(click)} Q:${fp(qarz)})`);
+    alert("✅ Buyurtma saqlandi!");
+    cart=[]; document.getElementById("order-client").value=""; document.getElementById("order-phone").value="";
     renderCart(); closeModal("modal-receipt");
-  } catch(e) { 
-    alert("Baza bilan xatolik yuz berdi: " + (e.message || JSON.stringify(e))); 
-  }
+  } catch(e) { alert("Xatolik: "+e.message); }
 }
 
 // ═══ NARXLAR ═══
@@ -656,11 +638,7 @@ async function savePrices() {
   try {
     for (const k of ["banner","arakal","setka"]) {
       const val = parseInt(document.getElementById("price-"+k).value)||0;
-      if (val>0) { 
-        prices[k]=val; 
-        const { error } = await sb.from("material_prices").upsert({material_name:k,price:val}); 
-        if (error) throw error;
-      }
+      if (val>0) { prices[k]=val; await sb.from("material_prices").upsert({material_name:k,price:val},{onConflict:"material_name"}); }
     }
     await logAction(sessionUser,"Ishchi","Narx",`B:${prices.banner} A:${prices.arakal} S:${prices.setka}`);
     alert("✅ Narxlar saqlandi!"); updatePricesDisplay(); closeModal("modal-settings");
@@ -671,11 +649,7 @@ async function saveAdminPrices() {
   try {
     for (const k of ["banner","arakal","setka"]) {
       const val = parseInt(document.getElementById("admin-price-"+k).value)||0;
-      if (val>0) { 
-        prices[k]=val; 
-        const { error } = await sb.from("material_prices").upsert({material_name:k,price:val}); 
-        if (error) throw error;
-      }
+      if (val>0) { prices[k]=val; await sb.from("material_prices").upsert({material_name:k,price:val},{onConflict:"material_name"}); }
     }
     await logAction("Admin","Admin","Narx",`B:${prices.banner} A:${prices.arakal} S:${prices.setka}`);
     alert("✅ Narxlar saqlandi!");
@@ -696,10 +670,6 @@ async function loadAdminData() {
       sb.from("cash_flow").select("*"),
       sb.from("debts").select("*").eq("status","Tolanmagan"),
     ]);
-    if (ordRes.error) throw ordRes.error;
-    if (flowRes.error) throw flowRes.error;
-    if (debtRes.error) throw debtRes.error;
-
     allOrders = ordRes.data||[];
     const flows = flowRes.data||[];
     const debts = debtRes.data||[];
@@ -713,7 +683,7 @@ async function loadAdminData() {
     loadAdminOrders(); loadDebts(); loadKassa(); loadWorkerStats(); loadWorkersList(); loadLogs(); renderM2();
     await fetchPrices();
     ["banner","arakal","setka"].forEach(k=>{ const el=document.getElementById("admin-price-"+k); if(el)el.value=prices[k]; });
-  } catch(e) { alert("Ma'lumot yuklashda xatolik: " + e.message); }
+  } catch(e) { console.error(e); }
 }
 
 // ORDERS
@@ -751,8 +721,7 @@ function loadAdminOrders() {
 }
 
 async function completeOrder(id) {
-  const { error } = await sb.from("orders").update({status:"Olib ketildi"}).eq("id",id);
-  if (error) { alert("Xatolik: " + error.message); return; }
+  await sb.from("orders").update({status:"Olib ketildi"}).eq("id",id);
   await logAction(sessionUser||"Admin","Admin","Buyurtma topshirildi",`ID: ${id}`);
   const o = allOrders.find(x=>x.id===id); if(o) o.status="Olib ketildi";
   loadAdminOrders();
@@ -809,8 +778,7 @@ async function saveIncome() {
   const method = document.getElementById("income-method").value;
   const note = document.getElementById("income-note").value||"Qo'shimcha kirim";
   if (!amount) return;
-  const { error } = await sb.from("cash_flow").insert({type:"Kirim",amount,payment_method:method,description:note,worker_name:sessionUser||"Admin"});
-  if (error) { alert("Xatolik: "+error.message); return; }
+  await sb.from("cash_flow").insert({type:"Kirim",amount,payment_method:method,description:note,worker_name:sessionUser||"Admin"});
   await logAction(sessionUser||"Admin","Admin","Kirim",`${fp(amount)} UZS - ${note}`);
   closeModal("modal-income"); loadKassa();
 }
@@ -820,8 +788,7 @@ async function saveExpense() {
   const cat = document.getElementById("expense-cat").value;
   const note = document.getElementById("expense-note").value||cat;
   if (!amount) return;
-  const { error } = await sb.from("expenses").insert({amount,category:cat,note,worker_name:sessionUser||"Admin"});
-  if (error) { alert("Xatolik: "+error.message); return; }
+  await sb.from("expenses").insert({amount,category:cat,note,worker_name:sessionUser||"Admin"});
   await logAction(sessionUser||"Admin","Admin","Chiqim",`${fp(amount)} UZS - ${cat}`);
   closeModal("modal-expense"); loadKassa();
 }
@@ -862,24 +829,16 @@ function openDebtPay(id, name, amount) {
 async function saveDebtPay() {
   const amount = parseInt(document.getElementById("debt-pay-amount").value)||0;
   if (!amount||!currentDebtId) return;
-  try {
-    const { data: debt, error: dErr } = await sb.from("debts").select("*").eq("id",currentDebtId).single();
-    if (dErr) throw dErr;
-    
-    const newPaid = (debt.paid_amount||0)+amount;
-    const newStatus = newPaid>=debt.amount?"Tolandi":"Tolanmagan";
-    const remaining = Math.max(0,debt.amount-newPaid);
-    
-    const { error: uErr } = await sb.from("debts").update({paid_amount:newPaid,amount:remaining,status:newStatus}).eq("id",currentDebtId);
-    if (uErr) throw uErr;
-    
-    const { error: cErr } = await sb.from("cash_flow").insert({type:"Kirim",amount,payment_method:"Naqd",description:`${debt.client_name} qarz to'lovi`,worker_name:sessionUser||"Admin"});
-    if (cErr) throw cErr;
-    
-    await logAction(sessionUser||"Admin","Admin","Qarz to'lash",`${debt.client_name}: ${fp(amount)} UZS`);
-    closeModal("modal-debt-pay"); loadDebts(); loadKassa();
-    alert(newStatus==="Tolandi"?"🎉 Qarz to'liq to'landi!":"✅ To'lov qabul qilindi. Qolgan: "+fp(remaining)+" UZS");
-  } catch(e) { alert("Xatolik yuz berdi: "+e.message); }
+  const { data: debt } = await sb.from("debts").select("*").eq("id",currentDebtId).single();
+  if (!debt) return;
+  const newPaid = (debt.paid_amount||0)+amount;
+  const newStatus = newPaid>=debt.amount?"Tolandi":"Tolanmagan";
+  const remaining = Math.max(0,debt.amount-newPaid);
+  await sb.from("debts").update({paid_amount:newPaid,amount:remaining,status:newStatus}).eq("id",currentDebtId);
+  await sb.from("cash_flow").insert({type:"Kirim",amount,payment_method:"Naqd",description:`${debt.client_name} qarz to'lovi`,worker_name:sessionUser||"Admin"});
+  await logAction(sessionUser||"Admin","Admin","Qarz to'lash",`${debt.client_name}: ${fp(amount)} UZS`);
+  closeModal("modal-debt-pay"); loadDebts(); loadKassa();
+  alert(newStatus==="Tolandi"?"🎉 Qarz to'liq to'landi!":"✅ To'lov qabul qilindi. Qolgan: "+fp(remaining)+" UZS");
 }
 
 // SEARCH
@@ -974,8 +933,7 @@ async function addWorker() {
 
 async function deleteWorker(id,name){
   if(!confirm(`${name}ni o'chirish?`))return;
-  const { error } = await sb.from("employees").delete().eq("id",id);
-  if (error) { alert("O'chirishda xatolik: " + error.message); return; }
+  await sb.from("employees").delete().eq("id",id);
   await logAction("Admin","Admin","Ishchi o'chirish",`${name} o'chirildi`);
   loadWorkersList();
 }
@@ -1076,9 +1034,9 @@ document.querySelectorAll(".modal-overlay").forEach(m=>{
 
 // ENTER KEY
 document.addEventListener("DOMContentLoaded",()=>{
-  document.getElementById("login-pass")?.addEventListener("keypress",e=>{ if(e.key===\"Enter\")doLogin(); });
-  document.getElementById("admin-pass-input")?.addEventListener("keypress",e=>{ if(e.key===\"Enter\")doAdminLogin(); });
-  document.getElementById("search-input")?.addEventListener("keypress",e=>{ if(e.key===\"Enter\")doSearch(); });
+  document.getElementById("login-pass")?.addEventListener("keypress",e=>{ if(e.key==="Enter")doLogin(); });
+  document.getElementById("admin-pass-input")?.addEventListener("keypress",e=>{ if(e.key==="Enter")doAdminLogin(); });
+  document.getElementById("search-input")?.addEventListener("keypress",e=>{ if(e.key==="Enter")doSearch(); });
 });
 
 init();

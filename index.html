@@ -515,7 +515,6 @@ function showPage(id) {
 /* MODAL OCHISH VA YOPISH FUNKSIYALARI */
 function openSettings() { document.getElementById("modal-settings").classList.add("show"); }
 function openIncomeModal() { document.getElementById("modal-income").classList.add("show"); }
-// Mana shu ikki funksiya oldingi kodda tushib qolgan edi, hozir to'liq qo'shildi!
 function openExpenseModal() { document.getElementById("modal-expense").classList.add("show"); }
 function closeModal(id) { document.getElementById(id).classList.remove("show"); }
 
@@ -751,7 +750,6 @@ async function loadKassa() {
   let flows = flowRes.data||[]; 
   let exps = expRes.data||[];
   
-  // Sana bo'yicha filterlash filtri
   const now = new Date();
   if (kassaFilter === "today") {
     flows = flows.filter(f => new Date(f.created_at).toDateString() === now.toDateString());
@@ -775,9 +773,10 @@ async function loadKassa() {
     <div class="stat-card card-border-red"><h4>📤 Chiqim</h4><p style="color:#FF3B30">${fp(chiqim)}</p></div>
   `;
   
+  // 👉 SINTAKSIS TO'G'RILANDI: color kalitidagi ("") belgilari joyiga qo'yildi
   const all = [
     ...flows.map(f=>({date:f.created_at,label:`${f.payment_method==="Naqd"?"💵":"💳"} ${f.description}`,amount:f.amount,color:"#34C759",sign:"+"})),
-    ...exps.map(e=>({date:e.created_at,label:`📤 ${e.category} (${e.note})`,amount:e.amount,color:#FF3B30",sign:"-"})),
+    ...exps.map(e=>({date:e.created_at,label:`📤 ${e.category} (${e.note})`,amount:e.amount,color:"#FF3B30",sign:"-"})),
   ].sort((a,b)=>new Date(b.date)-new Date(a.date));
   
   const listEl = document.getElementById("kassa-list");
@@ -904,11 +903,7 @@ async function addWorker() {
   const { data, error } = await sb.from("employees").insert([
     { full_name: name, login: login, password: pass, role: "worker" }
   ]);
-  
-  if (error) {
-    alert("Supabase Xatoligi: " + error.message);
-    return;
-  }
+  if (error) { alert("Supabase Xatoligi: " + error.message); return; }
   
   alert("✅ Yangi ishchi muvaffaqiyatli qo'shildi!");
   document.getElementById("new-w-name").value=""; 

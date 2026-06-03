@@ -749,7 +749,7 @@ async function loadKassa() {
   `;
   const all = [
     ...flows.map(f=>({date:f.created_at,label:`${f.payment_method==="Naqd"?"💵":"💳"} ${f.description}`,amount:f.amount,color:"#34C759",sign:"+"})),
-    ...exps.map(e=>({date:e.created_at,label:`📤 ${e.category}`,note:e.note,amount:e.amount,color:#FF3B30",sign:"-"})),
+    ...exps.map(e=>({date:e.created_at,label:`📤 ${e.category}`,note:e.note,amount:e.amount,color:"#FF3B30",sign:"-"})),
   ].sort((a,b)=>new Date(b.date)-new Date(a.date));
   document.getElementById("kassa-list").innerHTML = all.map(x=>`
     <div class="card" style="border-left:4px solid ${x.color}">
@@ -855,7 +855,6 @@ async function loadWorkersList() {
     </div>`).join("");
 }
 
-// 🛠️ ISHCHI QO'SHISH TUZATILGAN QISMI
 async function addWorker() {
   const name = document.getElementById("new-w-name").value.trim();
   const login = document.getElementById("new-w-login").value.trim();

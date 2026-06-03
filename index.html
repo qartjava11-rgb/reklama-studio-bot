@@ -22,7 +22,7 @@ body{background:#F2F2F7;color:#1C1C1E;min-height:100vh}
 .ios-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
 .ios-header h1{font-size:24px;font-weight:700}
 .seg-ctrl{display:flex;background:#E5E5EA;border-radius:9px;padding:2px;margin-bottom:16px;overflow-x:auto}
-.seg-item{flex:1;background:none;border:none;padding:10px 8px;font-size:13px;font-weight:600;color:#1C1C1E;cursor:pointer;border-radius:7px;white-space:nowrap}
+.seg-item{flex:1;background:none;border:none;padding:10px 8px;font-size:13px;font-weight:600;color:#1C1C1E;cursor:pointer;border-radius:7px;white-space:nowrap;outline:none}
 .seg-item.active{background:#FFF;box-shadow:0 3px 8px rgba(0,0,0,0.12)}
 .form-group{background:#FFF;border-radius:14px;box-shadow:0 2px 8px rgba(0,0,0,0.03);margin-bottom:16px;overflow:hidden}
 .input-row{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:.5px solid #E5E5EA}
@@ -91,27 +91,39 @@ h3{font-size:13px;color:#8E8E93;text-transform:uppercase;margin:16px 0 10px;font
   <p style="color:#8E8E93;font-size:13px">Yuklanmoqda...</p>
 </div>
 
+<!-- ═══════════ LOGIN ═══════════ -->
 <div id="page-login" class="page">
   <div class="login-container">
     <div class="login-box">
       <div style="font-size:48px;margin-bottom:8px">📣</div>
       <h1>Ziyo Dizayn</h1>
       <p class="login-subtitle">Reklama Studio Boshqaruv Tizimi</p>
-      <div id="worker-btns" class="worker-grid"></div>
-      <div id="pass-section" style="display:none">
-        <input type="password" id="login-pass" class="login-input" placeholder="Parolni kiriting"/>
-        <div id="pass-msg" style="font-size:12px;margin-bottom:10px;display:none"></div>
-        <button class="btn-primary" onclick="doLogin()">Kirish</button>
+      
+      <!-- iOS Switcher -->
+      <div class="seg-ctrl" style="margin-bottom: 20px;">
+        <button class="seg-item active" id="tab-btn-worker" onclick="switchLoginTab('worker')">👷 Ishchi</button>
+        <button class="seg-item" id="tab-btn-admin" onclick="switchLoginTab('admin')">🔐 Admin</button>
       </div>
-      <div style="margin-top:16px;padding-top:16px;border-top:1px solid #E5E5EA">
-        <p style="font-size:12px;color:#8E8E93;margin-bottom:8px">🔐 Admin kirish</p>
-        <input type="password" id="admin-pass-input" class="login-input" placeholder="Admin paroli"/>
-        <button class="btn-primary" style="background:#5856D6" onclick="doAdminLogin()">Admin sifatida kirish</button>
+
+      <!-- Ishchi Kirish bo'limi -->
+      <div id="section-worker-login">
+        <div id="worker-btns" class="worker-grid"></div>
+        <input type="text" id="worker-username" class="login-input" placeholder="Xodim logini"/>
+        <input type="password" id="worker-password" class="login-input" placeholder="Xodim paroli"/>
+        <div id="worker-pass-msg" style="font-size:12px;margin-bottom:10px;display:none"></div>
+        <button class="btn-primary" onclick="doWorkerLoginManual()">Tizimga Kirish</button>
+      </div>
+
+      <!-- Admin Kirish bo'limi -->
+      <div id="section-admin-login" style="display:none">
+        <input type="password" id="admin-pass-input" class="login-input" placeholder="Admin maxfiy paroli"/>
+        <button class="btn-primary" style="background:#5856D6" onclick="doAdminLogin()">Admin Sifatida Kirish</button>
       </div>
     </div>
   </div>
 </div>
 
+<!-- ═══════════ ISHCHI PANEL ═══════════ -->
 <div id="page-worker" class="page">
   <div class="ios-header">
     <div>
@@ -121,16 +133,19 @@ h3{font-size:13px;color:#8E8E93;text-transform:uppercase;margin:16px 0 10px;font
     <button onclick="openSettings()" style="background:none;border:none;font-size:26px;cursor:pointer">⚙️</button>
   </div>
 
+  <!-- Narxlar -->
   <div class="result-box" style="background:#FFF5E0;border-color:#FFCC80;margin-bottom:12px">
     <p style="color:#FF9500;font-size:13px">💰 Joriy narxlar (1m²): <span id="prices-display"></span></p>
   </div>
 
+  <!-- Mijoz -->
   <h3>MIJOZ MA'LUMOTLARI</h3>
   <div class="form-group">
     <div class="input-row"><label>Mijoz ismi</label><input type="text" id="order-client" placeholder="Ism familiya"/></div>
     <div class="input-row"><label>Telefon</label><input type="tel" id="order-phone" placeholder="+998..."/></div>
   </div>
 
+  <!-- Material -->
   <h3>MATERIAL</h3>
   <div class="seg-ctrl">
     <button class="seg-item active" data-mat="banner">Banner</button>
@@ -145,6 +160,7 @@ h3{font-size:13px;color:#8E8E93;text-transform:uppercase;margin:16px 0 10px;font
   <div class="result-box" id="calc-result"><p>O'lchamlarni kiriting...</p></div>
   <button class="btn-primary btn-green" onclick="addToCart()">➕ Savatga qo'shish</button>
 
+  <!-- Savat -->
   <h3>SAVAT</h3>
   <div class="form-group" id="cart-list">
     <p style="padding:15px;color:#8E8E93;text-align:center">Savat bo'sh</p>
@@ -153,6 +169,7 @@ h3{font-size:13px;color:#8E8E93;text-transform:uppercase;margin:16px 0 10px;font
     <p style="color:#1C1C1E;font-size:17px">Jami: <b id="cart-total" style="color:#007AFF">0</b> UZS</p>
   </div>
 
+  <!-- Tulov -->
   <h3>TO'LOV</h3>
   <div class="form-group">
     <div class="input-row"><label>💵 Naqd</label><input type="number" id="pay-naqd" value="0" inputmode="numeric" oninput="calcDebt('naqd')"/></div>
@@ -162,6 +179,7 @@ h3{font-size:13px;color:#8E8E93;text-transform:uppercase;margin:16px 0 10px;font
   <button class="btn-primary" onclick="prepareReceipt()">📋 Buyurtmani Rasmiylashtirish</button>
 </div>
 
+<!-- ═══════════ SOZLAMALAR MODAL ═══════════ -->
 <div id="modal-settings" class="modal-overlay">
   <div class="modal-box">
     <div class="modal-header">
@@ -179,6 +197,7 @@ h3{font-size:13px;color:#8E8E93;text-transform:uppercase;margin:16px 0 10px;font
   </div>
 </div>
 
+<!-- ═══════════ CHEK MODAL ═══════════ -->
 <div id="modal-receipt" class="modal-overlay">
   <div class="modal-box" style="background:#FFF">
     <div id="receipt-area" class="receipt-area">
@@ -208,6 +227,7 @@ h3{font-size:13px;color:#8E8E93;text-transform:uppercase;margin:16px 0 10px;font
   </div>
 </div>
 
+<!-- ═══════════ ADMIN PANEL ═══════════ -->
 <div id="page-admin" class="page">
   <div class="ios-header">
     <h1>📊 Admin Panel</h1>
@@ -215,6 +235,7 @@ h3{font-size:13px;color:#8E8E93;text-transform:uppercase;margin:16px 0 10px;font
   </div>
   <button class="refresh-btn" onclick="loadAdminData()">🔄 Yangilash</button>
 
+  <!-- Stats -->
   <h3>MOLIYAVIY HOLAT</h3>
   <div class="stats-grid">
     <div class="stat-card card-border-green"><h4>💵 Naqd</h4><p id="stat-naqd" style="color:#34C759">0</p></div>
@@ -223,6 +244,7 @@ h3{font-size:13px;color:#8E8E93;text-transform:uppercase;margin:16px 0 10px;font
     <div class="stat-card" style="grid-column:span 2;border-left:4px solid #5856D6"><h4>📦 Jami Buyurtmalar</h4><p id="stat-orders" style="color:#5856D6">0</p></div>
   </div>
 
+  <!-- Admin Tabs -->
   <div class="admin-tabs">
     <button class="admin-tab active" onclick="switchTab('orders',this)">📦 Buyurtmalar</button>
     <button class="admin-tab" onclick="switchTab('kassa',this)">💰 Kassa</button>
@@ -233,6 +255,7 @@ h3{font-size:13px;color:#8E8E93;text-transform:uppercase;margin:16px 0 10px;font
     <button class="admin-tab" onclick="switchTab('settings',this)">⚙️ Sozlamalar</button>
   </div>
 
+  <!-- ORDERS TAB -->
   <div id="tab-orders" class="tab-content active">
     <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
       <button class="btn-sm" onclick="filterOrders('Barcha')">Barchasi</button>
@@ -242,6 +265,7 @@ h3{font-size:13px;color:#8E8E93;text-transform:uppercase;margin:16px 0 10px;font
     <div id="orders-list"></div>
   </div>
 
+  <!-- KASSA TAB -->
   <div id="tab-kassa" class="tab-content">
     <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
       <button class="btn-sm" onclick="filterKassa('all',this)">Barchasi</button>
@@ -257,11 +281,13 @@ h3{font-size:13px;color:#8E8E93;text-transform:uppercase;margin:16px 0 10px;font
     <div id="kassa-list"></div>
   </div>
 
+  <!-- DEBTS TAB -->
   <div id="tab-debts" class="tab-content">
     <div id="debts-stats" class="stats-grid" style="margin-bottom:12px"></div>
     <div id="debts-list"></div>
   </div>
 
+  <!-- SEARCH TAB -->
   <div id="tab-search" class="tab-content">
     <div class="search-box">
       <input type="text" id="search-input" placeholder="Ism, telefon, material..."/>
@@ -270,6 +296,7 @@ h3{font-size:13px;color:#8E8E93;text-transform:uppercase;margin:16px 0 10px;font
     <div id="search-results"></div>
   </div>
 
+  <!-- WORKERS TAB -->
   <div id="tab-workers" class="tab-content">
     <div id="workers-stats"></div>
     <h3>YANGI ISHCHI QO'SHISH</h3>
@@ -283,6 +310,7 @@ h3{font-size:13px;color:#8E8E93;text-transform:uppercase;margin:16px 0 10px;font
     <div id="workers-list"></div>
   </div>
 
+  <!-- M2 TAB -->
   <div id="tab-m2" class="tab-content">
     <div style="display:flex;gap:8px;margin-bottom:14px">
       <select id="m2-year" onchange="renderM2()" style="flex:1;background:#FFF;border:1px solid #E5E5EA;border-radius:10px;padding:10px;font-size:14px;outline:none"></select>
@@ -291,6 +319,7 @@ h3{font-size:13px;color:#8E8E93;text-transform:uppercase;margin:16px 0 10px;font
     <div id="m2-content"></div>
   </div>
 
+  <!-- SETTINGS TAB -->
   <div id="tab-settings" class="tab-content">
     <h3>NARXLARNI YANGILASH</h3>
     <div class="form-group">
@@ -310,66 +339,37 @@ h3{font-size:13px;color:#8E8E93;text-transform:uppercase;margin:16px 0 10px;font
   </div>
 </div>
 
+<!-- MODALLAR (Kirim, Chiqim, Qarz) -->
 <div id="modal-income" class="modal-overlay">
   <div class="modal-box">
-    <div class="modal-header">
-      <h2>📥 Kirim Qo'shish</h2>
-      <button class="close-btn" onclick="closeModal('modal-income')">✕</button>
-    </div>
+    <div class="modal-header"><h2>📥 Kirim Qo'shish</h2><button class="close-btn" onclick="closeModal('modal-income')">✕</button></div>
     <div class="form-group">
       <div class="input-row"><label>Summa</label><input type="number" id="income-amount" placeholder="0"/></div>
-      <div class="input-row"><label>Usul</label>
-        <select id="income-method" style="border:none;outline:none;font-size:15px;color:#007AFF;text-align:right;background:transparent">
-          <option value="Naqd">💵 Naqd</option>
-          <option value="Click">💳 Click</option>
-        </select>
-      </div>
+      <div class="input-row"><label>Usul</label><select id="income-method" style="border:none;outline:none;font-size:15px;color:#007AFF;text-align:right;background:transparent"><option value="Naqd">💵 Naqd</option><option value="Click">💳 Click</option></select></div>
       <div class="input-row"><label>Izoh</label><input type="text" id="income-note" placeholder="Nima uchun?"/></div>
     </div>
-    <div class="two-btn">
-      <button class="btn-primary btn-gray" onclick="closeModal('modal-income')">Bekor</button>
-      <button class="btn-primary btn-green" onclick="saveIncome()">Saqlash</button>
-    </div>
+    <div class="two-btn"><button class="btn-primary btn-gray" onclick="closeModal('modal-income')">Bekor</button><button class="btn-primary btn-green" onclick="saveIncome()">Saqlash</button></div>
   </div>
 </div>
 
 <div id="modal-expense" class="modal-overlay">
   <div class="modal-box">
-    <div class="modal-header">
-      <h2>📤 Chiqim Qo'shish</h2>
-      <button class="close-btn" onclick="closeModal('modal-expense')">✕</button>
-    </div>
+    <div class="modal-header"><h2>📤 Chiqim Qo'shish</h2><button class="close-btn" onclick="closeModal('modal-expense')">✕</button></div>
     <div class="form-group">
       <div class="input-row"><label>Summa</label><input type="number" id="expense-amount" placeholder="0"/></div>
-      <div class="input-row"><label>Kategoriya</label>
-        <select id="expense-cat" style="border:none;outline:none;font-size:14px;color:#007AFF;text-align:right;background:transparent">
-          <option>Material xarid</option><option>Ijara</option><option>Maosh</option>
-          <option>Kommunal</option><option>Uskuna ta'miri</option><option>Boshqa</option>
-        </select>
-      </div>
+      <div class="input-row"><label>Kategoriya</label><select id="expense-cat" style="border:none;outline:none;font-size:14px;color:#007AFF;text-align:right;background:transparent"><option>Material xarid</option><option>Ijara</option><option>Maosh</option><option>Kommunal</option><option>Uskuna ta'miri</option><option>Boshqa</option></select></div>
       <div class="input-row"><label>Izoh</label><input type="text" id="expense-note" placeholder="Izoh"/></div>
     </div>
-    <div class="two-btn">
-      <button class="btn-primary btn-gray" onclick="closeModal('modal-expense')">Bekor</button>
-      <button class="btn-primary btn-red" onclick="saveExpense()">Saqlash</button>
-    </div>
+    <div class="two-btn"><button class="btn-primary btn-gray" onclick="closeModal('modal-expense')">Bekor</button><button class="btn-primary btn-red" onclick="saveExpense()">Saqlash</button></div>
   </div>
 </div>
 
 <div id="modal-debt-pay" class="modal-overlay">
   <div class="modal-box">
-    <div class="modal-header">
-      <h2>💰 Qarz To'lovi</h2>
-      <button class="close-btn" onclick="closeModal('modal-debt-pay')">✕</button>
-    </div>
+    <div class="modal-header"><h2>💰 Qarz To'lovi</h2><button class="close-btn" onclick="closeModal('modal-debt-pay')">✕</button></div>
     <div id="debt-pay-info" style="background:#FFF;padding:12px;border-radius:10px;margin-bottom:12px;font-size:13px"></div>
-    <div class="form-group">
-      <div class="input-row"><label>To'lov miqdori</label><input type="number" id="debt-pay-amount" placeholder="0"/></div>
-    </div>
-    <div class="two-btn">
-      <button class="btn-primary btn-gray" onclick="closeModal('modal-debt-pay')">Bekor</button>
-      <button class="btn-primary btn-green" onclick="saveDebtPay()">Saqlash</button>
-    </div>
+    <div class="form-group"><div class="input-row"><label>To'lov miqdori</label><input type="number" id="debt-pay-amount" placeholder="0"/></div></div>
+    <div class="two-btn"><button class="btn-primary btn-gray" onclick="closeModal('modal-debt-pay')">Bekor</button><button class="btn-primary btn-green" onclick="saveDebtPay()">Saqlash</button></div>
   </div>
 </div>
 
@@ -396,7 +396,6 @@ let kassaFilter = "all";
 const fp = n => Math.round(n||0).toLocaleString("uz-UZ");
 const nowStr = () => new Date().toLocaleString("uz-UZ");
 
-// ═══ INIT ═══
 async function init() {
   const saved = localStorage.getItem("ziyo_user");
   if (saved) {
@@ -404,12 +403,12 @@ async function init() {
     sessionUser = u.name; isAdmin = u.isAdmin||false;
   }
   await fetchPrices();
-  renderWorkerBtns();
+  await renderWorkerBtns();
   initM2Selects();
   document.getElementById("loading-screen").style.display = "none";
   if (sessionUser) {
     if (isAdmin) { showPage("page-admin"); await loadAdminData(); }
-    else { showPage("page-worker"); updatePricesDisplay(); }
+    else { showPage("page-worker"); document.getElementById("worker-name-lbl").textContent = sessionUser; updatePricesDisplay(); }
   } else {
     showPage("page-login");
   }
@@ -419,40 +418,56 @@ async function fetchPrices() {
   const { data } = await sb.from("material_prices").select("*");
   if (data) data.forEach(r => { prices[r.material_name] = r.price; });
   ["banner","arakal","setka"].forEach(k => {
-    const el = document.getElementById("price-"+k);
-    if (el) el.value = prices[k];
-    const el2 = document.getElementById("admin-price-"+k);
-    if (el2) el2.value = prices[k];
+    const el = document.getElementById("price-"+k); if (el) el.value = prices[k];
+    const el2 = document.getElementById("admin-price-"+k); if (el2) el2.value = prices[k];
   });
 }
 
 function updatePricesDisplay() {
-  document.getElementById("prices-display").textContent =
-    `Banner: ${fp(prices.banner)} | Arakal: ${fp(prices.arakal)} | Setka: ${fp(prices.setka)}`;
+  document.getElementById("prices-display").textContent = `Banner: ${fp(prices.banner)} | Arakal: ${fp(prices.arakal)} | Setka: ${fp(prices.setka)}`;
+}
+
+// LOGIN TABS (Ishchi / Admin)
+function switchLoginTab(type) {
+  const wTab = document.getElementById("tab-btn-worker");
+  const aTab = document.getElementById("tab-btn-admin");
+  const wSection = document.getElementById("section-worker-login");
+  const aSection = document.getElementById("section-admin-login");
+  
+  if(type === 'worker') {
+    wTab.classList.add("active"); aTab.classList.remove("active");
+    wSection.style.display = "block"; aSection.style.display = "none";
+  } else {
+    aTab.classList.add("active"); wTab.classList.remove("active");
+    aSection.style.display = "block"; wSection.style.display = "none";
+  }
 }
 
 async function renderWorkerBtns() {
   const { data } = await sb.from("employees").select("*").eq("role","worker");
   const workers = data || [];
   const container = document.getElementById("worker-btns");
-  container.innerHTML = workers.map(w =>
-    `<button class="worker-btn" onclick="selectWorker('${w.full_name}','${w.login}')" id="wb_${w.login}">${w.full_name}</button>`
-  ).join("");
+  if(workers.length === 0) {
+    container.innerHTML = `<p style="font-size:12px; color:#8E8E93; margin-bottom:10px; text-align:left;">💡 Ma'lumotlar bazasida xodimlar yo'q. Quyida login va parolni yozib kirishingiz yoki Admin panelda yangi xodim qo'shishingiz mumkin.</p>`;
+    return;
+  }
+  container.innerHTML = `<p style="font-size:12px; color:#8E8E93; width:100%; text-align:left; margin-bottom:6px">Tezkor tanlash:</p>` + 
+    workers.map(w => `<button class="worker-btn" onclick="selectWorker('${w.full_name}','${w.login}')" id="wb_${w.login}">${w.full_name}</button>`).join("");
 }
 
-let selectedLogin = "";
 function selectWorker(name, login) {
-  selectedLogin = login;
+  document.getElementById("worker-username").value = login;
   document.querySelectorAll(".worker-btn").forEach(b => b.classList.remove("selected"));
   document.getElementById("wb_"+login)?.classList.add("selected");
-  document.getElementById("pass-section").style.display = "block";
-  document.getElementById("login-pass").focus();
+  document.getElementById("worker-password").focus();
 }
 
-async function doLogin() {
-  const pass = document.getElementById("login-pass").value;
-  if (!selectedLogin) { alert("Avval profilingizni tanlang!"); return; }
-  const { data } = await sb.from("employees").select("*").eq("login", selectedLogin).eq("password", pass).single();
+async function doWorkerLoginManual() {
+  const login = document.getElementById("worker-username").value.trim();
+  const pass = document.getElementById("worker-password").value;
+  if (!login || !pass) { alert("Login va parolni kiriting!"); return; }
+  
+  const { data } = await sb.from("employees").select("*").eq("login", login).eq("password", pass).single();
   if (data) {
     sessionUser = data.full_name; isAdmin = false;
     localStorage.setItem("ziyo_user", JSON.stringify({name:sessionUser,isAdmin:false}));
@@ -460,8 +475,8 @@ async function doLogin() {
     await logAction(sessionUser, "Tizim", "Kirish", `${sessionUser} tizimga kirdi`);
     showPage("page-worker"); updatePricesDisplay();
   } else {
-    const msg = document.getElementById("pass-msg");
-    msg.style.display = "block"; msg.style.color = "#FF3B30"; msg.textContent = "❌ Parol noto'g'ri!";
+    const msg = document.getElementById("worker-pass-msg");
+    msg.style.display = "block"; msg.style.color = "#FF3B30"; msg.textContent = "❌ Login yoki parol noto'g'ri!";
   }
 }
 
@@ -485,7 +500,7 @@ function doLogout() {
 }
 
 function goToWorker() {
-  if (!isAdmin) showPage("page-worker");
+  if (sessionUser && !isAdmin) showPage("page-worker");
   else showPage("page-login");
 }
 
@@ -497,13 +512,15 @@ function showPage(id) {
 function openSettings() { document.getElementById("modal-settings").classList.add("show"); }
 function closeModal(id) { document.getElementById(id).classList.remove("show"); }
 
-// ═══ MATERIAL & HISOBLASH ═══
+// ═══ HISOBLASH VA SAVAT ═══
 document.querySelectorAll(".seg-item").forEach(btn => {
   btn.addEventListener("click", function() {
-    document.querySelectorAll(".seg-item").forEach(b => b.classList.remove("active"));
-    this.classList.add("active");
-    curMat = this.getAttribute("data-mat");
-    calcOrder();
+    if(this.parentNode.classList.contains('seg-ctrl') && !this.id.includes('tab-btn')) {
+      document.querySelectorAll(".seg-ctrl .seg-item").forEach(b => { if(!b.id.includes('tab-btn')) b.classList.remove("active"); });
+      this.classList.add("active");
+      curMat = this.getAttribute("data-mat");
+      calcOrder();
+    }
   });
 });
 
@@ -514,13 +531,10 @@ function calcOrder() {
   if (w>0 && h>0) {
     let bW = null;
     for (const r of ROLLS[curMat]) { if (r>=w){bW=r;break;} }
-    if (!bW) { 
-      bW = w; // Maksimal va noodatiy o'lchamdagi taqiqlar olib tashlandi, kiritilgan o'lcham bo'yicha hisoblaydi
-    }
+    if (!bW) bW = w; 
     const sqm = (bW*h)/10000;
     const total = Math.round(sqm*prices[curMat]*qty);
-    document.getElementById("calc-result").innerHTML =
-      `<p>${w}×${h}sm → <b>${sqm.toFixed(3)}m²</b> × ${qty} = <b style="color:#34C759">${fp(total)} UZS</b></p>`;
+    document.getElementById("calc-result").innerHTML = `<p>${w}×${h}sm → <b>${sqm.toFixed(3)}m²</b> × ${qty} = <b style="color:#34C759">${fp(total)} UZS</b></p>`;
     return { w, h, bW, sqm, total, qty };
   }
   document.getElementById("calc-result").innerHTML = "<p>O'lchamlarni kiriting...</p>";
@@ -534,8 +548,7 @@ function addToCart() {
   document.getElementById("order-width").value = "";
   document.getElementById("order-height").value = "";
   document.getElementById("order-qty").value = "1";
-  calcOrder();
-  renderCart();
+  calcOrder(); renderCart();
 }
 
 function renderCart() {
@@ -575,7 +588,7 @@ function calcDebt(field) {
   document.getElementById("pay-qarz").value = Math.max(0, total-naqd-click);
 }
 
-// ═══ CHEK ═══
+// ═══ CHEK VA BUYURTMA SAQLASH ═══
 function prepareReceipt() {
   if (!cart.length) { alert("Savat bo'sh!"); return; }
   const client = document.getElementById("order-client").value.trim()||"Noma'lum";
@@ -588,11 +601,8 @@ function prepareReceipt() {
   document.getElementById("r-client").textContent = client;
   document.getElementById("r-phone").textContent = phone;
   document.getElementById("r-worker").textContent = sessionUser;
-  document.getElementById("r-items").innerHTML = cart.map((it,i) =>
-    `<p>${i+1}. ${it.matName} (${it.width}×${it.height}sm, ${it.sqm.toFixed(3)}m²×${it.qty}) = ${fp(it.total)} UZS</p>`
-  ).join("");
-  document.getElementById("r-pay").innerHTML =
-    `💵 Naqd: ${fp(naqd)} | 💳 Click: ${fp(click)} | 🚨 Qarz: ${fp(qarz)}`;
+  document.getElementById("r-items").innerHTML = cart.map((it,i) => `<p>${i+1}. ${it.matName} (${it.width}×${it.height}sm, ${it.sqm.toFixed(3)}m²×${it.qty}) = ${fp(it.total)} UZS</p>`).join("");
+  document.getElementById("r-pay").innerHTML = `💵 Naqd: ${fp(naqd)} | 💳 Click: ${fp(click)} | 🚨 Qarz: ${fp(qarz)}`;
   document.getElementById("r-total").textContent = fp(total);
   document.getElementById("modal-receipt").classList.add("show");
 }
@@ -626,21 +636,20 @@ async function submitOrder() {
     if (naqd>0) await sb.from("cash_flow").insert({type:"Kirim",amount:naqd,payment_method:"Naqd",description:`${client} buyurtmasi`,worker_name:sessionUser});
     if (click>0) await sb.from("cash_flow").insert({type:"Kirim",amount:click,payment_method:"Click",description:`${client} buyurtmasi`,worker_name:sessionUser});
     if (qarz>0) await sb.from("debts").insert({client_name:client,client_phone:phone,amount:qarz,status:"Tolanmagan"});
-    await logAction(sessionUser,"Ishchi","Buyurtma",`${client}: ${fp(total)} UZS (N:${fp(naqd)} C:${fp(click)} Q:${fp(qarz)})`);
+    await logAction(sessionUser,"Ishchi","Buyurtma",`${client}: ${fp(total)} UZS`);
     alert("✅ Buyurtma saqlandi!");
     cart=[]; document.getElementById("order-client").value=""; document.getElementById("order-phone").value="";
     renderCart(); closeModal("modal-receipt");
   } catch(e) { alert("Xatolik: "+e.message); }
 }
 
-// ═══ NARXLAR ═══
+// ═══ ADMIN VA NARXLAR SOZLAMALARI ═══
 async function savePrices() {
   try {
     for (const k of ["banner","arakal","setka"]) {
       const val = parseInt(document.getElementById("price-"+k).value)||0;
       if (val>0) { prices[k]=val; await sb.from("material_prices").upsert({material_name:k,price:val},{onConflict:"material_name"}); }
     }
-    await logAction(sessionUser,"Ishchi","Narx",`B:${prices.banner} A:${prices.arakal} S:${prices.setka}`);
     alert("✅ Narxlar saqlandi!"); updatePricesDisplay(); closeModal("modal-settings");
   } catch(e) { alert("Xatolik: "+e.message); }
 }
@@ -651,7 +660,6 @@ async function saveAdminPrices() {
       const val = parseInt(document.getElementById("admin-price-"+k).value)||0;
       if (val>0) { prices[k]=val; await sb.from("material_prices").upsert({material_name:k,price:val},{onConflict:"material_name"}); }
     }
-    await logAction("Admin","Admin","Narx",`B:${prices.banner} A:${prices.arakal} S:${prices.setka}`);
     alert("✅ Narxlar saqlandi!");
   } catch(e) { alert("Xatolik: "+e.message); }
 }
@@ -662,7 +670,6 @@ function saveReceiptSettings() {
   alert("✅ Chek saqlandi!");
 }
 
-// ═══ ADMIN ═══
 async function loadAdminData() {
   try {
     const [ordRes, flowRes, debtRes] = await Promise.all([
@@ -682,104 +689,73 @@ async function loadAdminData() {
     document.getElementById("stat-orders").textContent = allOrders.length+" ta";
     loadAdminOrders(); loadDebts(); loadKassa(); loadWorkerStats(); loadWorkersList(); loadLogs(); renderM2();
     await fetchPrices();
-    ["banner","arakal","setka"].forEach(k=>{ const el=document.getElementById("admin-price-"+k); if(el)el.value=prices[k]; });
   } catch(e) { console.error(e); }
 }
 
-// ORDERS
 function filterOrders(f) { currentOrderFilter=f; loadAdminOrders(); }
 function loadAdminOrders() {
   const filtered = currentOrderFilter==="Barcha"?allOrders:allOrders.filter(o=>o.status===currentOrderFilter);
   const el = document.getElementById("orders-list");
   if (!filtered.length) { el.innerHTML='<div class="empty-state"><div>📦</div>Buyurtma yo\'q</div>'; return; }
-  el.innerHTML = filtered.map(o => {
-    const stColor = o.status==="Kutilmoqda"?"#FF9500":"#34C759";
-    const stText = o.status==="Kutilmoqda"?"⏳ Kutilmoqda":"✅ Topshirildi";
-    return `<div class="order-card" style="border-left-color:${stColor}">
-      <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px">
-        <div>
-          <b style="color:#007AFF;font-size:14px">${o.client_name}</b><br>
-          <small style="color:#8E8E93">${o.client_phone||"-"}</small>
-        </div>
-        <span class="badge" style="background:${stColor}">${stText}</span>
+  el.innerHTML = filtered.map(o => `
+    <div class="order-card" style="border-left-color:${o.status==="Kutilmoqda"?"#FF9500":"#34C759"}">
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+        <div><b>${o.client_name}</b><br><small style="color:#8E8E93">${o.client_phone||"-"}</small></div>
+        <span class="badge" style="background:${o.status==="Kutilmoqda"?"#FF9500":"#34C759"}">${o.status}</span>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;margin-bottom:8px">
-        <div><b style="color:${MAT_COLORS[o.material]||'#007AFF'}">${(MAT_NAMES[o.material]||o.material).toUpperCase()}</b><br><small style="color:#8E8E93">${o.width}×${o.height}sm | ${Number(o.sqm).toFixed(3)}m²</small></div>
-        <div style="text-align:right"><b style="color:#007AFF;font-size:14px">${fp(o.total_price)} UZS</b><br><small style="color:#8E8E93">👷 ${o.worker_name}</small></div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:8px">
+        <div><b>${o.material.toUpperCase()}</b><br><small>${o.width}×${o.height}sm | ${Number(o.sqm).toFixed(3)}m²</small></div>
+        <div style="text-align:right"><b>${fp(o.total_price)} UZS</b><br><small>👷 ${o.worker_name}</small></div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;font-size:11px;color:#8E8E93;margin-bottom:8px">
-        <div>💵 ${fp(o.payment_naqd||0)}</div>
-        <div>💳 ${fp(o.payment_click||0)}</div>
-        <div style="color:#FF3B30">🚨 ${fp(o.payment_qarz||0)}</div>
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;color:#8E8E93">
+      <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px">
         <span>${new Date(o.created_at).toLocaleString("uz-UZ")}</span>
         ${o.status==="Kutilmoqda"?`<button class="btn-sm btn-green" onclick="completeOrder(${o.id})">✅ Topshirish</button>`:""}
       </div>
-    </div>`;
-  }).join("");
+    </div>`).join("");
 }
 
 async function completeOrder(id) {
   await sb.from("orders").update({status:"Olib ketildi"}).eq("id",id);
-  await logAction(sessionUser||"Admin","Admin","Buyurtma topshirildi",`ID: ${id}`);
   const o = allOrders.find(x=>x.id===id); if(o) o.status="Olib ketildi";
   loadAdminOrders();
 }
 
-// KASSA
 async function loadKassa() {
   const [flowRes, expRes] = await Promise.all([
     sb.from("cash_flow").select("*").order("created_at",{ascending:false}),
     sb.from("expenses").select("*").order("created_at",{ascending:false}),
   ]);
-  const flows = flowRes.data||[];
-  const exps = expRes.data||[];
-  const now = new Date();
-  const inPeriod = ts => {
-    const d = new Date(ts);
-    if (kassaFilter==="today") return d.toDateString()===now.toDateString();
-    if (kassaFilter==="week") { const w=new Date(now); w.setDate(now.getDate()-7); return d>=w; }
-    if (kassaFilter==="month") { return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth(); }
-    return true;
-  };
-  const fFlows = flows.filter(f=>inPeriod(f.created_at));
-  const fExps = exps.filter(e=>inPeriod(e.created_at));
+  const flows = flowRes.data||[]; const exps = expRes.data||[];
   let naqd=0,click=0,chiqim=0;
-  fFlows.forEach(f=>{ if(f.payment_method==="Naqd")naqd+=f.amount; if(f.payment_method==="Click")click+=f.amount; });
-  fExps.forEach(e=>chiqim+=e.amount);
+  flows.forEach(f=>{ if(f.payment_method==="Naqd")naqd+=f.amount; if(f.payment_method==="Click")click+=f.amount; });
+  exps.forEach(e=>chiqim+=e.amount);
   const kirim = naqd+click;
   document.getElementById("kassa-stats").innerHTML = `
     <div class="stat-card card-border-green"><h4>📥 Kirim</h4><p style="color:#34C759">${fp(kirim)}</p></div>
     <div class="stat-card card-border-red"><h4>📤 Chiqim</h4><p style="color:#FF3B30">${fp(chiqim)}</p></div>
-    <div class="stat-card" style="grid-column:span 2;border-left:4px solid #5856D6"><h4>💼 Qoldi</h4><p style="color:${kirim-chiqim>=0?'#5856D6':'#FF3B30'}">${fp(kirim-chiqim)}</p></div>
   `;
   const all = [
-    ...fFlows.map(f=>({date:f.created_at,label:`${f.payment_method==="Naqd"?"💵":"💳"} ${f.description||"Kirim"}`,amount:f.amount,color:"#34C759",sign:"+"})),
-    ...fExps.map(e=>({date:e.created_at,label:`📤 ${e.category}`,note:e.note,amount:e.amount,color:"#FF3B30",sign:"-"})),
+    ...flows.map(f=>({date:f.created_at,label:`${f.payment_method==="Naqd"?"💵":"💳"} ${f.description}`,amount:f.amount,color:"#34C759",sign:"+"})),
+    ...exps.map(e=>({date:e.created_at,label:`📤 ${e.category}`,note:e.note,amount:e.amount,color:"#FF3B30",sign:"-"})),
   ].sort((a,b)=>new Date(b.date)-new Date(a.date));
-  document.getElementById("kassa-list").innerHTML = all.length ? all.map(x=>`
+  document.getElementById("kassa-list").innerHTML = all.map(x=>`
     <div class="card" style="border-left:4px solid ${x.color}">
       <div style="display:flex;justify-content:space-between;align-items:center">
-        <div><b style="font-size:13px">${x.label}</b>${x.note?`<br><small style="color:#8E8E93">${x.note}</small>`:""}<br><small style="color:#8E8E93">${new Date(x.date).toLocaleString("uz-UZ")}</small></div>
-        <b style="color:${x.color};font-size:15px">${x.sign}${fp(x.amount)}</b>
+        <div><b>${x.label}</b><br><small>${new Date(x.date).toLocaleString("uz-UZ")}</small></div>
+        <b style="color:${x.color}">${x.sign}${fp(x.amount)}</b>
       </div>
-    </div>
-  `).join("") : '<div class="empty-state"><div>💰</div>Operatsiya yo\'q</div>';
+    </div>`).join("");
 }
 
-function filterKassa(f) { kassaFilter=f; loadKassa(); }
-
-function openIncomeModal() { document.getElementById("income-amount").value=""; document.getElementById("income-note").value=""; document.getElementById("modal-income").classList.add("show"); }
-function openExpenseModal() { document.getElementById("expense-amount").value=""; document.getElementById("expense-note").value=""; document.getElementById("modal-expense").classList.add("show"); }
+function openIncomeModal() { document.getElementById("income-amount").value=""; document.getElementById("modal-income").classList.add("show"); }
+function openExpenseModal() { document.getElementById("expense-amount").value=""; document.getElementById("modal-expense").classList.add("show"); }
 
 async function saveIncome() {
   const amount = parseInt(document.getElementById("income-amount").value)||0;
   const method = document.getElementById("income-method").value;
-  const note = document.getElementById("income-note").value||"Qo'shimcha kirim";
+  const note = document.getElementById("income-note").value||"Kirim";
   if (!amount) return;
-  await sb.from("cash_flow").insert({type:"Kirim",amount,payment_method:method,description:note,worker_name:sessionUser||"Admin"});
-  await logAction(sessionUser||"Admin","Admin","Kirim",`${fp(amount)} UZS - ${note}`);
+  await sb.from("cash_flow").insert({type:"Kirim",amount,payment_method:method,description:note,worker_name:"Admin"});
   closeModal("modal-income"); loadKassa();
 }
 
@@ -788,163 +764,100 @@ async function saveExpense() {
   const cat = document.getElementById("expense-cat").value;
   const note = document.getElementById("expense-note").value||cat;
   if (!amount) return;
-  await sb.from("expenses").insert({amount,category:cat,note,worker_name:sessionUser||"Admin"});
-  await logAction(sessionUser||"Admin","Admin","Chiqim",`${fp(amount)} UZS - ${cat}`);
+  await sb.from("expenses").insert({amount,category:cat,note,worker_name:"Admin"});
   closeModal("modal-expense"); loadKassa();
 }
 
-// DEBTS
 async function loadDebts() {
-  const { data } = await sb.from("debts").select("*").eq("status","Tolanmagan").order("created_at",{ascending:false});
+  const { data } = await sb.from("debts").select("*").eq("status","Tolanmagan");
   const debts = data||[];
-  const total = debts.reduce((s,d)=>s+d.amount,0);
-  document.getElementById("debts-stats").innerHTML = `
-    <div class="stat-card card-border-red"><h4>Qarzlilar</h4><p style="color:#FF3B30">${debts.length} ta</p></div>
-    <div class="stat-card card-border-red"><h4>Jami Qarz</h4><p style="color:#FF3B30">${fp(total)}</p></div>
-  `;
-  const el = document.getElementById("debts-list");
-  if (!debts.length) { el.innerHTML='<div class="empty-state"><div>🎉</div>Qarz yo\'q!</div>'; return; }
-  el.innerHTML = debts.map(d=>`
+  document.getElementById("debts-list").innerHTML = debts.map(d=>`
     <div class="card card-border-red">
-      <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:10px">
-        <div>
-          <b style="color:#FF3B30;font-size:14px">${d.client_name}</b><br>
-          <small style="color:#8E8E93">${d.client_phone||"-"}</small><br>
-          <small style="color:#8E8E93">${new Date(d.created_at).toLocaleString("uz-UZ")}</small>
-        </div>
-        <b style="font-size:18px;color:#FF3B30">${fp(d.amount)} UZS</b>
+      <div style="display:flex;justify-content:space-between;margin-bottom:10px">
+        <div><b>${d.client_name}</b><br><small>${d.client_phone}</small></div>
+        <b style="color:#FF3B30">${fp(d.amount)} UZS</b>
       </div>
-      <button class="btn-primary btn-green" style="padding:10px;font-size:13px;margin:0" onclick="openDebtPay(${d.id},'${d.client_name}',${d.amount})">💰 To'lov Qabul Qilish</button>
-    </div>
-  `).join("");
+      <button class="btn-primary btn-green" style="padding:10px;font-size:13px;margin:0" onclick="openDebtPay(${d.id},'${d.client_name}',${d.amount})">To'lov Qabul Qilish</button>
+    </div>`).join("");
 }
 
 function openDebtPay(id, name, amount) {
   currentDebtId = id;
-  document.getElementById("debt-pay-info").innerHTML = `<b>${name}</b><br><span style="color:#FF3B30;font-size:16px;font-weight:700">Qarz: ${fp(amount)} UZS</span>`;
+  document.getElementById("debt-pay-info").innerHTML = `<b>${name}</b> qarz to'lovi<br><b>Qoldiq: ${fp(amount)} UZS</b>`;
   document.getElementById("debt-pay-amount").value = amount;
   document.getElementById("modal-debt-pay").classList.add("show");
 }
 
 async function saveDebtPay() {
   const amount = parseInt(document.getElementById("debt-pay-amount").value)||0;
-  if (!amount||!currentDebtId) return;
+  if (!amount) return;
   const { data: debt } = await sb.from("debts").select("*").eq("id",currentDebtId).single();
-  if (!debt) return;
   const newPaid = (debt.paid_amount||0)+amount;
-  const newStatus = newPaid>=debt.amount?"Tolandi":"Tolanmagan";
-  const remaining = Math.max(0,debt.amount-newPaid);
-  await sb.from("debts").update({paid_amount:newPaid,amount:remaining,status:newStatus}).eq("id",currentDebtId);
-  await sb.from("cash_flow").insert({type:"Kirim",amount,payment_method:"Naqd",description:`${debt.client_name} qarz to'lovi`,worker_name:sessionUser||"Admin"});
-  await logAction(sessionUser||"Admin","Admin","Qarz to'lash",`${debt.client_name}: ${fp(amount)} UZS`);
+  const rem = Math.max(0, debt.amount-amount);
+  await sb.from("debts").update({paid_amount:newPaid,amount:rem,status:rem<=0?"Tolandi":"Tolanmagan"}).eq("id",currentDebtId);
+  await sb.from("cash_flow").insert({type:"Kirim",amount,payment_method:"Naqd",description:`${debt.client_name} qarz to'lovi`,worker_name:"Admin"});
   closeModal("modal-debt-pay"); loadDebts(); loadKassa();
-  alert(newStatus==="Tolandi"?"🎉 Qarz to'liq to'landi!":"✅ To'lov qabul qilindi. Qolgan: "+fp(remaining)+" UZS");
 }
 
-// SEARCH
 async function doSearch() {
   const q = document.getElementById("search-input").value.trim().toLowerCase();
   if (!q) return;
-  const { data } = await sb.from("orders").select("*").order("created_at",{ascending:false});
-  const results = (data||[]).filter(o =>
-    o.client_name?.toLowerCase().includes(q) ||
-    o.client_phone?.includes(q) ||
-    o.material?.toLowerCase().includes(q) ||
-    o.worker_name?.toLowerCase().includes(q)
-  );
-  const el = document.getElementById("search-results");
-  if (!results.length) { el.innerHTML='<div class="empty-state"><div>🔍</div>Natija topilmadi</div>'; return; }
-  el.innerHTML = `<p style="font-size:12px;color:#8E8E93;margin-bottom:10px">${results.length} ta natija topildi</p>` +
-    results.map(o=>`
-      <div class="card card-border-blue">
-        <div style="display:flex;justify-content:space-between;margin-bottom:6px">
-          <div><b style="color:#007AFF">${o.client_name}</b><br><small style="color:#8E8E93">${o.client_phone||"-"}</small></div>
-          <div style="text-align:right"><b>${fp(o.total_price)} UZS</b><br><small style="color:#8E8E93">${o.status}</small></div>
-        </div>
-        <div style="font-size:12px;color:#8E8E93">
-          ${(MAT_NAMES[o.material]||o.material).toUpperCase()} | ${o.width}×${o.height}sm | ${Number(o.sqm).toFixed(3)}m² | 👷 ${o.worker_name}
-        </div>
-        <div style="font-size:11px;color:#8E8E93;margin-top:4px">💵 ${fp(o.payment_naqd||0)} | 💳 ${fp(o.payment_click||0)} | 🚨 ${fp(o.payment_qarz||0)}</div>
-        <div style="font-size:11px;color:#8E8E93;margin-top:2px">${new Date(o.created_at).toLocaleString("uz-UZ")}</div>
-      </div>
-    `).join("");
+  const { data } = await sb.from("orders").select("*");
+  const results = (data||[]).filter(o => o.client_name?.toLowerCase().includes(q) || o.client_phone?.includes(q));
+  document.getElementById("search-results").innerHTML = results.map(o=>`
+    <div class="card">
+      <b>${o.client_name}</b> (${o.client_phone}) - <b>${fp(o.total_price)} UZS</b><br>
+      <small>${o.material} | ${o.width}×${o.height}sm | 👷 ${o.worker_name} [${o.status}]</small>
+    </div>`).join("");
 }
 
-// WORKERS STATS
 async function loadWorkerStats() {
   const { data } = await sb.from("orders").select("*");
-  const orders = data||[];
-  const total = orders.reduce((s,o)=>s+o.total_price,0);
+  const orders = data||[]; const total = orders.reduce((s,o)=>s+o.total_price,0);
   const metrics = {};
   orders.forEach(o=>{
-    if (!metrics[o.worker_name]) metrics[o.worker_name]={count:0,total:0,naqd:0,click:0,qarz:0,pending:0,done:0};
-    const m=metrics[o.worker_name];
-    m.count++;m.total+=o.total_price;m.naqd+=(o.payment_naqd||0);m.click+=(o.payment_click||0);m.qarz+=(o.payment_qarz||0);
-    if(o.status==="Kutilmoqda")m.pending++;else m.done++;
+    if (!metrics[o.worker_name]) metrics[o.worker_name]={count:0,total:0};
+    metrics[o.worker_name].count++; metrics[o.worker_name].total+=o.total_price;
   });
-  const el = document.getElementById("workers-stats");
-  if (!Object.keys(metrics).length) { el.innerHTML='<div class="empty-state"><div>👷</div>Ma\'lumot yo\'q</div>'; return; }
-  el.innerHTML = Object.entries(metrics).sort((a,b)=>b[1].total-a[1].total).map(([name,m],i)=>{
+  document.getElementById("workers-stats").innerHTML = Object.entries(metrics).map(([name,m])=>{
     const eff = total>0?((m.total/total)*100).toFixed(1):0;
-    return `<div class="card card-border-blue" style="margin-bottom:12px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <b style="color:#007AFF;font-size:15px">${i+1}. 👤 ${name}</b>
-        <span class="badge badge-green">Samaradorlik: ${eff}%</span>
-      </div>
+    return `<div class="card card-border-blue">
+      <b>👤 ${name}</b> - ${m.count} ta buyurtma (${fp(m.total)} UZS)
       <div class="progress-bar"><div class="progress-fill" style="width:${eff}%"></div></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;font-size:12px">
-        <div class="card" style="padding:8px;margin:0"><b>${m.count} ta</b><br><small style="color:#8E8E93">Buyurtmalar</small></div>
-        <div class="card" style="padding:8px;margin:0"><b style="color:#007AFF">${fp(m.total)}</b><br><small style="color:#8E8E93">Jami UZS</small></div>
-        <div class="card" style="padding:8px;margin:0"><b style="color:#34C759">${fp(m.naqd)}</b><br><small style="color:#8E8E93">💵 Naqd</small></div>
-        <div class="card" style="padding:8px;margin:0"><b style="color:#007AFF">${fp(m.click)}</b><br><small style="color:#8E8E93">💳 Click</small></div>
-        <div class="card" style="padding:8px;margin:0"><b style="color:#FF9500">${m.pending} ta</b><br><small style="color:#8E8E93">⏳ Kutilmoqda</small></div>
-        <div class="card" style="padding:8px;margin:0"><b style="color:#34C759">${m.done} ta</b><br><small style="color:#8E8E93">✅ Topshirildi</small></div>
-      </div>
-      ${m.qarz>0?`<div style="margin-top:8px;padding:8px;background:#FFF0F0;border-radius:8px;color:#FF3B30;font-weight:600;font-size:13px">🚨 Qarz: ${fp(m.qarz)} UZS</div>`:""}
     </div>`;
   }).join("");
 }
 
 async function loadWorkersList() {
-  const { data } = await sb.from("employees").select("*").order("id");
-  const el = document.getElementById("workers-list");
-  el.innerHTML = (data||[]).map(w=>`
-    <div class="card card-border-blue" style="display:flex;justify-content:space-between;align-items:center">
-      <div><b>${w.full_name}</b><br><small style="color:#8E8E93">Login: ${w.login}</small></div>
-      <button onclick="deleteWorker(${w.id},'${w.full_name}')" style="background:#FF3B30;color:#FFF;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer">O'chirish</button>
-    </div>
-  `).join("");
+  const { data } = await sb.from("employees").select("*").eq("role","worker");
+  document.getElementById("workers-list").innerHTML = (data||[]).map(w=>`
+    <div class="card" style="display:flex;justify-content:space-between;align-items:center">
+      <div><b>${w.full_name}</b> (Login: ${w.login})</div>
+      <button onclick="deleteWorker(${w.id})" style="background:#FF3B30;color:#FFF;border:none;border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer">O'chirish</button>
+    </div>`).join("");
 }
 
 async function addWorker() {
   const name=document.getElementById("new-w-name").value.trim();
   const login=document.getElementById("new-w-login").value.trim();
   const pass=document.getElementById("new-w-pass").value.trim();
-  if(!name||!login||!pass){alert("Barcha maydonlarni to'ldiring!");return;}
-  const {error}=await sb.from("employees").insert({full_name:name,login,password:pass,role:"worker"});
-  if(error){alert("Xatolik: "+error.message);return;}
-  await logAction("Admin","Admin","Ishchi qo'shish",`${name} qo'shildi`);
-  alert("✅ Ishchi qo'shildi!");
-  document.getElementById("new-w-name").value="";
-  document.getElementById("new-w-login").value="";
-  document.getElementById("new-w-pass").value="";
-  loadWorkersList(); loadWorkerStats();
+  if(!name||!login||!pass) return;
+  await sb.from("employees").insert({full_name:name,login,password:pass,role:"worker"});
+  document.getElementById("new-w-name").value=""; document.getElementById("new-w-login").value=""; document.getElementById("new-w-pass").value="";
+  await renderWorkerBtns(); loadWorkersList(); loadWorkerStats();
 }
 
-async function deleteWorker(id,name){
-  if(!confirm(`${name}ni o'chirish?`))return;
+async function deleteWorker(id){
+  if(!confirm("Ishchini o'chirishni tasdiqlaysizmi?"))return;
   await sb.from("employees").delete().eq("id",id);
-  await logAction("Admin","Admin","Ishchi o'chirish",`${name} o'chirildi`);
-  loadWorkersList();
+  await renderWorkerBtns(); loadWorkersList();
 }
 
-// M2 HISOBOT
 function initM2Selects(){
   const nd=new Date();
-  const ys=document.getElementById("m2-year");
-  const ms=document.getElementById("m2-month");
+  const ys=document.getElementById("m2-year"); const ms=document.getElementById("m2-month");
   if(!ys||!ms)return;
-  [2024,2025,2026].forEach(y=>{const o=document.createElement("option");o.value=y;o.textContent=y;if(y===nd.getFullYear())o.selected=true;ys.appendChild(o);});
+  [2025,2026].forEach(y=>{const o=document.createElement("option");o.value=y;o.textContent=y;if(y===nd.getFullYear())o.selected=true;ys.appendChild(o);});
   MONTHS.forEach((m,i)=>{const o=document.createElement("option");o.value=i;o.textContent=m;if(i===nd.getMonth())o.selected=true;ms.appendChild(o);});
 }
 
@@ -953,67 +866,27 @@ async function renderM2(){
   const month=parseInt(document.getElementById("m2-month")?.value||new Date().getMonth());
   const {data}=await sb.from("orders").select("*");
   const mOrds=(data||[]).filter(o=>{const d=new Date(o.created_at);return d.getFullYear()===year&&d.getMonth()===month;});
-  const mats={banner:{m2:0,rev:0},arakal:{m2:0,rev:0},setka:{m2:0,rev:0}};
-  mOrds.forEach(o=>{const k=o.material;if(mats[k]&&o.sqm){mats[k].m2+=Number(o.sqm);mats[k].rev+=o.total_price;}});
-  const totM2=Object.values(mats).reduce((s,v)=>s+v.m2,0);
-  const totRev=Object.values(mats).reduce((s,v)=>s+v.rev,0);
-  const wnames=[...new Set(mOrds.map(o=>o.worker_name))].filter(Boolean);
+  const mats={banner:0,arakal:0,setka:0};
+  mOrds.forEach(o=>{ if(mats[o.material]!==undefined) mats[o.material]+=Number(o.sqm||0); });
+  const totM2 = Object.values(mats).reduce((a,b)=>a+b,0);
   document.getElementById("m2-content").innerHTML=`
-    <div class="card" style="text-align:center;border-left:4px solid #FF9500;margin-bottom:12px">
-      <h4 style="font-size:11px;color:#8E8E93;text-transform:uppercase;margin-bottom:6px">${MONTHS[month]} ${year} — JAMI</h4>
-      <p style="font-size:28px;font-weight:800;color:#FF9500">${totM2.toFixed(2)} m²</p>
-      <p style="font-size:13px;color:#8E8E93;margin-top:4px">Daromad: <b style="color:#34C759">${fp(totRev)} UZS</b></p>
+    <div class="card" style="text-align:center;border-left:4px solid #FF9500">
+      <h4>${MONTHS[month]} ${year} - JAMI HAJM</h4><p style="font-size:28px;font-weight:800;color:#FF9500">${totM2.toFixed(2)} m²</p>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px">
-      ${Object.entries(mats).map(([k,v])=>`
-        <div class="stat-card" style="border-left:4px solid ${MAT_COLORS[k]}">
-          <h4 style="color:${MAT_COLORS[k]}">${MAT_NAMES[k]}</h4>
-          <p style="color:${MAT_COLORS[k]};font-size:18px">${v.m2.toFixed(2)}</p>
-          <small style="color:#8E8E93">m²</small>
-          <p style="color:#34C759;font-size:12px;margin-top:4px">${fp(v.rev)}</p>
-          <div class="progress-bar"><div class="progress-fill" style="width:${totM2>0?(v.m2/totM2*100):0}%;background:${MAT_COLORS[k]}"></div></div>
-        </div>
-      `).join("")}
-    </div>
-    ${wnames.length?`<div class="card">
-      <h4 style="font-size:13px;font-weight:700;color:#5856D6;margin-bottom:12px">👷 Ishchi bo'yicha</h4>
-      ${wnames.map(wn=>{
-        const wo=mOrds.filter(o=>o.worker_name===wn);
-        const wm={banner:0,arakal:0,setka:0};
-        wo.forEach(o=>{if(wm[o.material]!==undefined&&o.sqm)wm[o.material]+=Number(o.sqm);});
-        return `<div style="background:#F2F2F7;border-radius:10px;padding:10px;margin-bottom:8px">
-          <b style="color:#007AFF">${wn}</b> — ${wo.length} ta buyurtma
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:8px">
-            ${Object.entries(wm).map(([k,m2])=>`<div style="text-align:center;background:#FFF;border-radius:8px;padding:8px">
-              <b style="color:${MAT_COLORS[k]};font-size:15px">${m2.toFixed(2)}</b>
-              <div style="font-size:10px;color:#8E8E93">${MAT_NAMES[k]}</div>
-            </div>`).join("")}
-          </div>
-        </div>`;
-      }).join("")}
-    </div>`:""}
-  `;
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px">
+      ${Object.entries(mats).map(([k,v])=>`<div class="stat-card" style="border-left:4px solid ${MAT_COLORS[k]}"><h4>${MAT_NAMES[k]}</h4><p style="font-size:16px;font-weight:700">${v.toFixed(2)} m²</p></div>`).join("")}
+    </div>`;
 }
 
-// LOGS
 async function loadLogs(){
-  const {data}=await sb.from("system_logs").select("*").order("created_at",{ascending:false}).limit(100);
-  const el=document.getElementById("logs-list");
-  el.innerHTML=(data||[]).map(l=>`
-    <div class="log-box">
-      <b>[${new Date(l.created_at).toLocaleString("uz-UZ")}] ${l.panel_type}</b>
-      <span style="display:block;color:#1C1C1E;margin-top:4px">👤 ${l.username} → ${l.action_type}</span>
-      <small>${l.details}</small>
-    </div>
-  `).join("")||"<p style='padding:10px;color:#8E8E93;text-align:center'>Log yo'q</p>";
+  const {data}=await sb.from("system_logs").select("*").order("created_at",{ascending:false}).limit(30);
+  document.getElementById("logs-list").innerHTML=(data||[]).map(l=>`<div class="log-box"><b>[${new Date(l.created_at).toLocaleTimeString()}]</b> ${l.username}: ${l.details}</div>`).join("");
 }
 
-// TAB SWITCHING
 function switchTab(name, btn) {
   document.querySelectorAll(".tab-content").forEach(t=>t.classList.remove("active"));
   document.querySelectorAll(".admin-tab").forEach(t=>t.classList.remove("active"));
-  document.getElementById("tab-"+name)?.classList.add("active");
-  btn.classList.add("active");
+  document.getElementById("tab-"+name)?.classList.add("active"); btn.classList.add("active");
   if(name==="kassa")loadKassa();
   else if(name==="debts")loadDebts();
   else if(name==="workers"){loadWorkerStats();loadWorkersList();}
@@ -1022,22 +895,11 @@ function switchTab(name, btn) {
   else if(name==="orders")loadAdminOrders();
 }
 
-// LOG
 async function logAction(user,panel,action,details){
-  try { await sb.from("system_logs").insert({username:user,panel_type:panel,action_type:action,details:details}); } catch(e){}
+  try{await sb.from("system_logs").insert({username:user,panel_type:panel,action_type:action,details:details});}catch(e){}
 }
 
-// MODAL OUTSIDE CLICK
-document.querySelectorAll(".modal-overlay").forEach(m=>{
-  m.addEventListener("click",e=>{ if(e.target===m) m.classList.remove("show"); });
-});
-
-// ENTER KEY
-document.addEventListener("DOMContentLoaded",()=>{
-  document.getElementById("login-pass")?.addEventListener("keypress",e=>{ if(e.key==="Enter")doLogin(); });
-  document.getElementById("admin-pass-input")?.addEventListener("keypress",e=>{ if(e.key==="Enter")doAdminLogin(); });
-  document.getElementById("search-input")?.addEventListener("keypress",e=>{ if(e.key==="Enter")doSearch(); });
-});
+document.querySelectorAll(".modal-overlay").forEach(m=>{ m.addEventListener("click",e=>{ if(e.target===m) m.classList.remove("show"); }); });
 
 init();
 </script>
